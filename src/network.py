@@ -2,6 +2,8 @@ import numpy as np
 
 from sklearn.mixture import GaussianMixture
 
+from utils import compute_adjacencies
+
 class Node():
 
     def __init__(self, k, sample, labels):
@@ -20,6 +22,7 @@ class Node():
         self.base_clfs = base_clfs
         self.alpha = np.zeros((len(base_clfs), 1))
         self.margin = np.inner(self.sample, base_clfs) * self.labels[:, np.newaxis]
+        assert self.margin.shape == (len(self.sample), (len(base_clfs))), (self.alpha.shape, base_clfs.shape, self.margin.shape)
 
     def set_alpha(self, alpha):
         assert alpha.shape == (len(self.base_clfs), 1), alpha.shape
@@ -50,6 +53,18 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
 
     return nodes
 
+def synthetic_graph(x, y, nb_nodes, theta_true):
+
+    adj_matrix = compute_adjacencies(theta_true, nb_nodes)
+
+    nodes = list()
+    for i in range(nb_nodes):
+
+        n = Node(i, x[i], y[i])
+        n.set_neighbors([j for j, a in enumerate(adj_matrix[i]) if a != 0])
+        nodes.append(n)
+
+    return nodes
 
 
 # def get_network_cst_valency(nb_nodes, valency):

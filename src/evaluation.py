@@ -6,4 +6,4 @@ def alpha_variance(nodes):
     return np.var([n.alpha for n in nodes], axis=0)
 
 def mean_accuracy(nodes):
-    return np.mean([accuracy_score(np.inner(n.sample, n.clf), n.labels) for n in nodes])
+    return np.mean([accuracy_score(n.predict(n.sample), n.labels) for n in nodes])

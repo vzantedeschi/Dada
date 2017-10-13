@@ -7,6 +7,9 @@ class Node():
         self.sample = sample
         self.labels = labels
 
+    def predict(self, sample):
+        return np.sign(np.inner(sample, self.clf))
+
     def set_neighbors(self, neighbors):
         self.neighbors = neighbors
 
@@ -34,6 +37,8 @@ def line_network(x, y, nb_nodes=3):
         nodes.append(n)
 
     return nodes
+
+
 
 # def get_network_cst_valency(nb_nodes, valency):
 #     assert valency < nb_nodes

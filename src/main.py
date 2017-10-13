@@ -1,19 +1,18 @@
 import numpy as np
 
-from sklearn.datasets import load_wine
 from sklearn.utils import shuffle
 
 from evaluation import alpha_variance, mean_accuracy
 from network import line_network
 from optimization import average_FW
+from utils import load_wine_dataset
 
-# load dataset
-X, Y = load_wine(return_X_y=True)
+X, Y = load_wine_dataset()
 X, Y = shuffle(X, Y)
 M, D = X.shape
 
 # set network
-nodes = line_network(X, Y, 4)
+nodes = line_network(X, Y, 3)
 
 # set base classifiers
 N = 3
@@ -24,11 +23,12 @@ for n in nodes:
     n.set_margin_matrix(base_clfs)
 
 # global consensus
-average_FW(nodes, 10)
+average_FW(nodes, 10000)
 
 # check convergence
 var = alpha_variance(nodes)
-assert np.allclose(var, np.zeros((N,1)))
+print(var)
+# assert np.allclose(var, np.zeros((N,1))), var
 
 # check accuracy
 print(mean_accuracy(nodes))

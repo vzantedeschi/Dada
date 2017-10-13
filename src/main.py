@@ -12,7 +12,7 @@ X, Y = shuffle(X, Y)
 M, D = X.shape
 
 # set network
-nodes = line_network(X, Y, 3)
+nodes = line_network(X, Y, 3, cluster_data=True)
 
 # set base classifiers
 N = 3
@@ -23,7 +23,7 @@ for n in nodes:
     n.set_margin_matrix(base_clfs)
 
 # global consensus
-average_FW(nodes, 10000)
+average_FW(nodes, 100)
 
 # check convergence
 var = alpha_variance(nodes)

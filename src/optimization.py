@@ -1,5 +1,25 @@
 import numpy as np
 
+# ----------------------------------------------------------- specifid utils
+
+def one_frank_wolfe_round(t, nodes, beta):
+    """ Modify nodes!
+    """
+
+    gamma = 2 / (3 + t)
+
+    for n in nodes:
+
+        w = np.exp(-np.dot(n.margin, n.alpha))
+        w /= np.sum(w)
+
+        # minimize negative gradient
+        g = np.dot(w.T, n.margin)    
+        j = np.argmin(g)
+
+        s_k = np.sign(g[:, j]) * beta * n.base_clfs[:, j][:, np.newaxis]
+        n.set_alpha((1 - gamma) * n.alpha + gamma * s_k)
+
 # --------------------------------------------------------------------- local learning
 
 def local_FW(nodes, nb_iter=1, beta=1, callbacks=None):
@@ -9,19 +29,33 @@ def local_FW(nodes, nb_iter=1, beta=1, callbacks=None):
     # frank-wolfe
     for t in range(nb_iter):
 
-        gamma = 2 / (3 + t)
+        one_frank_wolfe_round(t, nodes, beta)
+
+        results.append({})  
+        for k, call in callbacks.items():
+            results[t][k] = call(nodes)
+
+    return results
+
+def neighbor_FW(nodes, nb_iter=1, beta=1, callbacks=None):
+
+    results = []
+
+    one_frank_wolfe_round(0, nodes, beta)
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call(nodes)
+    
+    # frank-wolfe
+    for t in range(1, nb_iter):
 
         for n in nodes:
+            new_clfs = n.get_neighbors_clfs()
+            n.set_margin_matrix(new_clfs)
+            new_alpha = np.dot(n.clf, np.linalg.pinv(new_clfs)).T
+            n.set_alpha(new_alpha)
 
-            w = np.exp(-np.dot(n.margin, n.alpha))
-            w /= np.sum(w)
-
-            # minimize negative gradient
-            g = np.dot(w.T, n.margin)    
-            j = np.argmin(g)
-
-            s_k = np.sign(g[:, j]) * beta * n.base_clfs[:, j][:, np.newaxis]
-            n.set_alpha((1 - gamma) * n.alpha + gamma * s_k)
+        one_frank_wolfe_round(t, nodes, beta)
 
         results.append({})  
         for k, call in callbacks.items():
@@ -38,24 +72,12 @@ def average_FW(nodes, nb_iter=1, beta=1, callbacks=None):
     # frank-wolfe
     for t in range(nb_iter):
 
-        gamma = 2 / (3 + t)
-
-        for n in nodes:
-
-            w = np.exp(-np.dot(n.margin, n.alpha))
-            w /= np.sum(w)
-
-            # minimize negative gradient
-            g = np.dot(w.T, n.margin)    
-            j = np.argmin(g)
-
-            s_k = np.sign(g[:, j]) * beta * n.base_clfs[:, j][:, np.newaxis]
-            n.set_alpha((1 - gamma) * n.alpha + gamma * s_k)
+        one_frank_wolfe_round(t, nodes, beta)
 
         # averaging between neighbors
         for n in nodes:
 
-            n.set_alpha((n.alpha + sum([nodes[i].alpha for i in n.neighbors]))/(1 + len(n.neighbors)))
+            n.set_alpha((n.alpha + sum([i.alpha for i in n.neighbors]))/(1 + len(n.neighbors)))
 
         results.append({})  
         for k, call in callbacks.items():

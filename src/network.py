@@ -8,6 +8,7 @@ class Node():
 
     def __init__(self, k, sample, labels, test_sample=None, test_labels=None):
         self.id = k
+        self.d = sample.shape[1] 
         self.sample = sample
         self.labels = labels
         self.test_sample = test_sample
@@ -16,15 +17,27 @@ class Node():
     def predict(self, sample):
         return np.sign(np.inner(sample, self.clf))
 
+    def init_matrices(self, n=None):
+        if n:
+            nb_base_clfs = n
+        else:
+            nb_base_clfs = len(self.neighbors)
+        base_clfs = np.eye(nb_base_clfs, self.d)
+        alpha = np.zeros((nb_base_clfs, 1))
+        self.set_margin_matrix(base_clfs)
+        self.set_alpha(alpha)
+
+    def get_neighbors_clfs(self):
+        nei_clfs = np.vstack([n.clf for n in self.neighbors])
+        return nei_clfs
+
     def set_neighbors(self, neighbors):
         self.neighbors = neighbors
 
     def set_margin_matrix(self, base_clfs):
         # set margin matrix A
         self.base_clfs = base_clfs
-        self.alpha = np.zeros((len(base_clfs), 1))
         self.margin = np.inner(self.sample, base_clfs) * self.labels[:, np.newaxis]
-        assert self.margin.shape == (len(self.sample), (len(base_clfs))), (self.alpha.shape, base_clfs.shape, self.margin.shape)
 
     def set_alpha(self, alpha):
         assert alpha.shape == (len(self.base_clfs), 1), alpha.shape
@@ -47,11 +60,15 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
 
 
     nodes = list()
+    nei_ids = list()
     for i in range(nb_nodes):
 
         n = Node(i, *groups[i])
-        n.set_neighbors([j for j in [i-1, i+1] if j >= 0 and j < nb_nodes])
+        nei_ids.append([j for j in [i-1, i+1] if j >= 0 and j < nb_nodes])
         nodes.append(n)
+
+    for ids, n in zip(nei_ids, nodes):
+        n.set_neighbors([nodes[i] for i in ids])
 
     return nodes
 
@@ -60,16 +77,14 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     adj_matrix = compute_adjacencies(theta_true, nb_nodes)
 
     nodes = list()
+    nei_ids = list()
     for i in range(nb_nodes):
 
         n = Node(i, x[i], y[i], x_test[i], y_test[i])
-        n.set_neighbors([j for j, a in enumerate(adj_matrix[i]) if a != 0])
+        nei_ids.append([j for j, a in enumerate(adj_matrix[i]) if a != 0])
         nodes.append(n)
 
+    for ids, n in zip(nei_ids, nodes):
+        n.set_neighbors([nodes[i] for i in ids])
+
     return nodes
-
-
-# def get_network_cst_valency(nb_nodes, valency):
-#     assert valency < nb_nodes
-
-#     nodes = [Node(k) for k in range(nb_nodes)]

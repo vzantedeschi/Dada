@@ -3,7 +3,14 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 def alpha_variance(nodes):
-    return np.var([n.alpha for n in nodes], axis=0)
+    return np.mean(np.var([n.alpha for n in nodes], axis=0))
 
 def mean_accuracy(nodes):
-    return np.mean([accuracy_score(n.predict(n.sample), n.labels) for n in nodes])
+    """ returns mean train accuracy, mean test accuracy
+    """
+    train_acc, test_acc = [], []
+    for n in nodes:
+        train_acc.append(accuracy_score(n.predict(n.sample), n.labels))
+        test_acc.append(accuracy_score(n.predict(n.test_sample), n.test_labels))
+
+    return np.mean(train_acc), np.mean(test_acc)

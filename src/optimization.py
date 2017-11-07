@@ -11,7 +11,7 @@ def one_frank_wolfe_round(t, nodes, beta):
     for n in nodes:
 
         w = np.exp(-np.dot(n.margin, n.alpha))
-        w /= np.sum(w)
+        w = np.nan_to_num(w/np.sum(w))
 
         # minimize negative gradient
         g = np.dot(w.T, n.margin)    
@@ -37,31 +37,27 @@ def local_FW(nodes, nb_iter=1, beta=1, callbacks=None):
 
     return results
 
-def neighbor_FW(nodes, nb_iter=1, beta=1, callbacks=None):
+# def neighbor_FW(nodes, nb_iter=1, beta=1, callbacks=None):
 
-    results = []
-
-    one_frank_wolfe_round(0, nodes, beta)
-    results.append({})  
-    for k, call in callbacks.items():
-        results[0][k] = call(nodes)
+#     results = []
     
-    # frank-wolfe
-    for t in range(1, nb_iter):
+#     # frank-wolfe
+#     for t in range(nb_iter):
 
-        for n in nodes:
-            new_clfs = n.get_neighbors_clfs()
-            n.set_margin_matrix(new_clfs)
-            new_alpha = np.dot(n.clf, np.linalg.pinv(new_clfs)).T
-            n.set_alpha(new_alpha)
+#         one_frank_wolfe_round(t, nodes, beta)
 
-        one_frank_wolfe_round(t, nodes, beta)
+#         if t < nb_iter-1:
+#             for n in nodes:
+#                 new_clfs = n.get_neighbors_clfs()
+#                 n.set_margin_matrix(new_clfs)
+#                 new_alpha = np.dot(n.clf, np.linalg.pinv(new_clfs)).T
+#                 n.set_alpha(new_alpha)
 
-        results.append({})  
-        for k, call in callbacks.items():
-            results[t][k] = call(nodes)
+#         results.append({})  
+#         for k, call in callbacks.items():
+#             results[t][k] = call(nodes)
 
-    return results
+#     return results
 
 # ---------------------------------------------------------------- global consensus FW
 

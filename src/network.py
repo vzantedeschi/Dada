@@ -6,10 +6,12 @@ from utils import compute_adjacencies
 
 class Node():
 
-    def __init__(self, k, sample, labels):
+    def __init__(self, k, sample, labels, test_sample=None, test_labels=None):
         self.id = k
         self.sample = sample
         self.labels = labels
+        self.test_sample = test_sample
+        self.test_labels = test_labels
 
     def predict(self, sample):
         return np.sign(np.inner(sample, self.clf))
@@ -53,14 +55,14 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
 
     return nodes
 
-def synthetic_graph(x, y, nb_nodes, theta_true):
+def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
 
     adj_matrix = compute_adjacencies(theta_true, nb_nodes)
 
     nodes = list()
     for i in range(nb_nodes):
 
-        n = Node(i, x[i], y[i])
+        n = Node(i, x[i], y[i], x_test[i], y_test[i])
         n.set_neighbors([j for j, a in enumerate(adj_matrix[i]) if a != 0])
         nodes.append(n)
 

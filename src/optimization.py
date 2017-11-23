@@ -8,7 +8,7 @@ Boosting algorithms based on Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def one_frank_wolfe_round(nodes, gamma, beta=1, t=1):
+def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, simplex=True):
     """ Modify nodes!
     """
 
@@ -20,19 +20,20 @@ def one_frank_wolfe_round(nodes, gamma, beta=1, t=1):
         # minimize negative gradient
         g = np.dot(n.margin.T, w)  
         
-        # l1 constraint
-        j = np.argmin(g)
-        s_k = np.sign(g[j, :]) * beta * np.asarray([[1] if i==j else [0] for i in range(n.n)])
-
-        # # simplex constraint
-        # j = np.argmax(g)
-        # s_k = np.asarray([[1] if i==j else [0] for i in range(n.n)])
+        if simplex:
+            # simplex constraint
+            j = np.argmax(g)
+            s_k = np.asarray([[1] if i==j else [0] for i in range(n.n)])
+        else:
+            # l1 constraint
+            j = np.argmin(g)
+            s_k = np.sign(g[j, :]) * beta * np.asarray([[1] if i==j else [0] for i in range(n.n)])
 
         n.set_alpha((1 - gamma) * n.alpha + gamma * s_k)
 
 # --------------------------------------------------------------------- local learning
 
-def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, callbacks=None):
+def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     results = []
 
@@ -45,7 +46,7 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, callbacks=None):
 
         gamma = 2 / (3 + t)
 
-        one_frank_wolfe_round(nodes, gamma, beta)
+        one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
         results.append({})  
         for k, call in callbacks.items():
@@ -53,7 +54,7 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, callbacks=None):
 
     return results
 
-def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, callbacks=None):
+def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     results = []
 
@@ -62,9 +63,11 @@ def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, callbacks=None):
         n.init_matrices()
     
     # frank-wolfe
-    for t in range(nb_iter):
+    for t in range(nb_iter-1):
 
-        gamma = 1
+        gamma = 2 / (3 + t)
+
+        one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
         for n in nodes:
             new_clfs = n.get_neighbors_clfs()
@@ -72,17 +75,21 @@ def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, callbacks=None):
             new_alpha = np.dot(n.clf, np.linalg.pinv(new_clfs)).T
             n.set_alpha(new_alpha)
 
-        one_frank_wolfe_round(nodes, gamma, beta)
-
         results.append({})  
         for k, call in callbacks.items():
             results[t][k] = call[0](nodes, *call[1])
+
+    one_frank_wolfe_round(nodes, gamma, beta, simplex)
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[t+1][k] = call[0](nodes, *call[1])
 
     return results
 
 # ---------------------------------------------------------------- global consensus FW
 
-def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, callbacks=None):
+def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     results = []
     
@@ -95,7 +102,7 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, callbacks=None):
 
         gamma = 2 / (3 + t)
 
-        one_frank_wolfe_round(nodes, gamma, beta)
+        one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
         # averaging between neighbors
         for n in nodes:
@@ -108,7 +115,7 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, callbacks=None):
 
     return results
 
-def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, callbacks=None):
+def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     results = []
 
@@ -120,7 +127,7 @@ def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, callbacks=None):
 
         gamma = 2 / (3 + t)
 
-        one_frank_wolfe_round([node], gamma, beta)
+        one_frank_wolfe_round([node], gamma, beta, simplex)
 
         results.append({})  
         for k, call in callbacks.items():

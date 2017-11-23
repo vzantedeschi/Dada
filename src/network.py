@@ -19,11 +19,11 @@ class Node():
 
     def init_matrices(self, n=None):
         if n:
-            nb_base_clfs = n
+            self.n = n
         else:
-            nb_base_clfs = len(self.neighbors)
-        base_clfs = np.eye(nb_base_clfs, self.d)
-        alpha = np.zeros((nb_base_clfs, 1))
+            self.n = len(self.neighbors)
+        base_clfs = np.eye(self.n, self.d)
+        alpha = np.zeros((self.n, 1))
         self.set_margin_matrix(base_clfs)
         self.set_alpha(alpha)
 
@@ -43,6 +43,23 @@ class Node():
         assert alpha.shape == (len(self.base_clfs), 1), alpha.shape
         self.alpha = alpha
         self.clf = np.dot(self.alpha.T, self.base_clfs)
+        assert self.clf.shape == (1, self.d)
+
+def centralize_data(nodes):
+
+    # centralize data
+    x, y, x_test, y_test = [], [], [], []
+    for n in nodes:
+        x.append(n.sample)
+        y.append(n.labels)
+        x_test.append(n.test_sample)
+        y_test.append(n.test_labels)
+
+    node = Node(len(nodes), np.vstack(x), np.concatenate(y), np.vstack(x_test), np.concatenate(y_test))
+
+    return node
+
+# --------------------------------------------------------------- NETWORK CONSTRUCTORS
 
 # line network
 def line_network(x, y, nb_nodes=3, cluster_data=False):

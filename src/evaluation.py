@@ -2,10 +2,10 @@ import numpy as np
 
 from sklearn.metrics import accuracy_score
 
-def alpha_variance(nodes):
+def alpha_variance(nodes, *args):
     return np.mean(np.var([n.alpha for n in nodes], axis=0))
 
-def mean_accuracy(nodes):
+def mean_accuracy(nodes, *args):
     """ returns mean train accuracy, mean test accuracy
     """
     train_acc, test_acc = [], []

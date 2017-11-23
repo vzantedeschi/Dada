@@ -18,8 +18,7 @@ def load_wine_dataset():
     return scale(X), Y
 
 # code adapted from https://gitlab.inria.fr/magnet/decentralizedpaper/blob/master/notebooks/basic_data_generation.ipynb
-def generate_models(nb_clust=1, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2),
-                    nodes_per_clust=100, normalize_centroids=False, random_state=1):
+def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2), normalize_centroids=False, random_state=1):
     """Generate true models of all the agents"""
 
     rng = np.random.RandomState(random_state)
@@ -37,16 +36,12 @@ def generate_models(nb_clust=1, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1
         cluster_indexes.append(np.arange(start, start+nodes_per_clust))
         start += nodes_per_clust
             
-    theta_true = np.vstack([rng.normal(loc=centroid,
-                                              scale=intra_clust_stdev,
-                                              size=(nodes_per_clust,2))
-                                              for centroid in centroids])
+    theta_true = np.vstack([rng.normal(loc=centroid, scale=intra_clust_stdev, size=(nodes_per_clust,2)) for centroid in centroids])
     n = len(theta_true)
 
     return n, theta_true, cluster_indexes
 
-def generate_samples(n, theta_true, dim, min_samples_per_node=1, max_samples_per_node=20,
-                     samples_stdev=np.sqrt(1./2), test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
+def generate_samples(n, theta_true, dim, min_samples_per_node=1, max_samples_per_node=20, samples_stdev=np.sqrt(1./2), test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
     """Generate train and test samples associated with nodes"""
     
     rng = np.random.RandomState(random_state)

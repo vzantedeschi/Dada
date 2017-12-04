@@ -14,8 +14,7 @@ def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, simplex=True):
 
     for n in nodes:
 
-        w = np.exp(-np.dot(n.margin, n.alpha)/t)
-        w = np.nan_to_num(w/np.sum(w))
+        w = n.compute_weights(t)
 
         # minimize negative gradient
         g = np.dot(n.margin.T, w)  

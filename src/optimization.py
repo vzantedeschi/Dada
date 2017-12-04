@@ -62,7 +62,7 @@ def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, simplex=True, callb
     for n in nodes:
         n.init_matrices()
     
-    gamma = 2 / (2 + t)
+    gamma = 1
 
     # frank-wolfe
     for t in range(nb_iter-1):
@@ -123,16 +123,17 @@ def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbac
 
     node = centralize_data(nodes)
     node.init_matrices(nb_base_clfs)
+    nodes = [node]
 
     # frank-wolfe
     for t in range(nb_iter):
 
         gamma = 2 / (2 + t)
 
-        one_frank_wolfe_round([node], gamma, beta, simplex)
+        one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
         results.append({})  
         for k, call in callbacks.items():
-            results[t][k] = call[0]([node], *call[1])
+            results[t][k] = call[0](nodes, *call[1])
 
     return results

@@ -9,10 +9,9 @@ from optimization import average_FW, local_FW, neighbor_FW, centralized_FW
 from utils import load_wine_dataset, generate_models, generate_samples
 
 NB_ITER = 100
-
-N = 50
+N = 100
 D = 10
-random_state = 2
+random_state = 20160922
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, X_test, Y_test, _, _ = generate_samples(V, theta_true, D, random_state=random_state)
 
@@ -29,7 +28,7 @@ methods = {
     "local": local_FW,
     "average": average_FW,
     "neighbor": neighbor_FW
-    }
+}
 
 results = {}
 for k, m in methods.items():

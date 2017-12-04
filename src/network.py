@@ -37,8 +37,9 @@ class Node():
         nei_clfs = np.vstack([n.clf for n in self.neighbors])
         return nei_clfs
 
-    def set_neighbors(self, neighbors):
+    def set_neighbors(self, neighbors, sim=None):
         self.neighbors = neighbors
+        self.sim = sim
 
     def set_margin_matrix(self, base_clfs):
         # set margin matrix A
@@ -102,11 +103,13 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
     return nodes
 
 def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
+    """ edge weight = sim*nb_instances """
 
-    adj_matrix = compute_adjacencies(theta_true, nb_nodes)
+    adj_matrix, similarities = compute_adjacencies(theta_true, nb_nodes)
 
     nodes = list()
     nei_ids = list()
+    nei_sim = list()
     for i in range(nb_nodes):
         # add offset dim
         M, _ = x[i].shape
@@ -115,10 +118,16 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
         x_test_copy = np.c_[x_test[i], np.ones(M)]
 
         n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
-        nei_ids.append([j for j, a in enumerate(adj_matrix[i]) if a != 0])
+
+        nei_ids.append([])
+        nei_sim.append([])
+        for j, a in enumerate(adj_matrix[i]):
+            if a != 0:
+                nei_ids[i].append(j)
+                nei_sim[i].append(similarities[i][j])
         nodes.append(n)
 
-    for ids, n in zip(nei_ids, nodes):
-        n.set_neighbors([nodes[i] for i in ids])
+    for ids, sims, n in zip(nei_ids, nei_sim, nodes):
+        n.set_neighbors([nodes[i] for i in ids], [len(nodes[i].sample)*s for s,i in zip(sims, ids)])
 
     return nodes

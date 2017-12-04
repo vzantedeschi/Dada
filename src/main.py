@@ -8,7 +8,7 @@ from network import line_network, synthetic_graph
 from optimization import average_FW, local_FW, neighbor_FW, centralized_FW
 from utils import load_wine_dataset, generate_models, generate_samples
 
-NB_ITER = 100
+NB_ITER = 10
 N = 100
 D = 10
 random_state = 20160922

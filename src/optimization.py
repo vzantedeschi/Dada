@@ -90,7 +90,7 @@ def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, simplex=True, callb
 
 # ---------------------------------------------------------------- global consensus FW
 
-def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
+def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, weighted=False, callbacks=None):
 
     results = []
     
@@ -107,8 +107,12 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=N
 
         # averaging between neighbors
         for n in nodes:
+            alphas = np.hstack([n.alpha] + [i.alpha for i in n.neighbors])
 
-            n.set_alpha((n.alpha + sum([i.alpha for i in n.neighbors]))/(1 + len(n.neighbors)))
+            if weighted:
+                n.set_alpha(np.average(alphas, weights=[len(n.sample)] + n.sim, axis=1)[:, None])
+            else:
+                n.set_alpha(np.mean(alphas, axis=1)[:, None])
 
         results.append({})  
         for k, call in callbacks.items():

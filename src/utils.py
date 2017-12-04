@@ -101,4 +101,4 @@ def compute_adjacencies(theta_true, n, sigma=0.1):
         if np.abs(np.linalg.eigvalsh(np.diag(adjacency.sum(axis=1)) - adjacency)[1]) > 1e-3:
             break
 
-    return adjacency
+    return adjacency, similarities

@@ -1,10 +1,10 @@
 from itertools import combinations
 import numpy as np
 
-from sklearn.datasets import load_wine
+from sklearn.datasets import load_iris, load_wine
 from sklearn.preprocessing import normalize, scale
 
-# ---------------------------------------------------------------------------------- LOAD DATASETS
+# ---------------------------------------------------------------------- LOAD DATASETS
 
 def load_wine_dataset():
     
@@ -14,6 +14,16 @@ def load_wine_dataset():
     indices = Y != 2
     Y, X = Y[indices], X[indices]
     Y[Y==0] = -1
+
+    return scale(X), Y
+
+def load_iris_dataset():
+    
+    X, Y = load_iris(return_X_y=True)
+
+    # merge two classes, only two classes with labels -1,1
+    Y[Y==0] = -1
+    Y[Y==2] = 1
 
     return scale(X), Y
 

@@ -27,6 +27,11 @@ class Node():
         self.set_margin_matrix(base_clfs)
         self.set_alpha(alpha)
 
+    def compute_weights(self, temp=1):
+        w = np.exp(-np.dot(self.margin, self.alpha) / temp)
+        w = np.nan_to_num(w / np.sum(w))
+        return w
+
     def get_neighbors_clfs(self):
         nei_clfs = np.vstack([n.clf for n in self.neighbors])
         return nei_clfs

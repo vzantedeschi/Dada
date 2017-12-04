@@ -47,6 +47,9 @@ class Node():
 
 def centralize_data(nodes):
 
+    if len(nodes) == 1:
+        return nodes[0]
+
     # centralize data
     x, y, x_test, y_test = [], [], [], []
     for n in nodes:
@@ -65,15 +68,18 @@ def centralize_data(nodes):
 def line_network(x, y, nb_nodes=3, cluster_data=False):
     M, _ = x.shape
 
+    # add offset dim
+    x_copy = np.c_[x, np.ones(M)]
+
     if cluster_data:
         gm = GaussianMixture(nb_nodes, init_params="random")
-        gm.fit(x)
-        labels = gm.predict(x)
-        groups = [[x[labels==i], y[labels==i]] for i in range(nb_nodes)]
+        gm.fit(x_copy)
+        labels = gm.predict(x_copy)
+        groups = [[x_copy[labels==i], y[labels==i]] for i in range(nb_nodes)]
 
     else:
         s = M // nb_nodes   
-        groups = [[x[i*s:(i+1)*s], y[i*s:(i+1)*s]] for i in range(nb_nodes)]
+        groups = [[x_copy[i*s:(i+1)*s], y[i*s:(i+1)*s]] for i in range(nb_nodes)]
 
 
     nodes = list()
@@ -96,8 +102,13 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     nodes = list()
     nei_ids = list()
     for i in range(nb_nodes):
+        # add offset dim
+        M, _ = x[i].shape
+        x_copy = np.c_[x[i], np.ones(M)]
+        M, _ = x_test[i].shape
+        x_test_copy = np.c_[x_test[i], np.ones(M)]
 
-        n = Node(i, x[i], y[i], x_test[i], y_test[i])
+        n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
         nei_ids.append([j for j, a in enumerate(adj_matrix[i]) if a != 0])
         nodes.append(n)
 

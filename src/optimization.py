@@ -44,7 +44,7 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=Non
     # frank-wolfe
     for t in range(nb_iter):
 
-        gamma = 2 / (3 + t)
+        gamma = 2 / (2 + t)
 
         one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
@@ -62,10 +62,12 @@ def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, simplex=True, callb
     for n in nodes:
         n.init_matrices()
     
+    gamma = 2 / (2 + t)
+
     # frank-wolfe
     for t in range(nb_iter-1):
 
-        gamma = 2 / (3 + t)
+        gamma = 2 / (2 + t)
 
         one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
@@ -100,7 +102,7 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=N
     # frank-wolfe
     for t in range(nb_iter):
 
-        gamma = 2 / (3 + t)
+        gamma = 2 / (2 + t)
 
         one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
@@ -125,7 +127,7 @@ def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbac
     # frank-wolfe
     for t in range(nb_iter):
 
-        gamma = 2 / (3 + t)
+        gamma = 2 / (2 + t)
 
         one_frank_wolfe_round([node], gamma, beta, simplex)
 

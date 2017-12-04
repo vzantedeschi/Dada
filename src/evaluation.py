@@ -8,9 +8,17 @@ def alpha_variance(nodes, *args):
 def mean_accuracy(nodes, *args):
     """ returns mean train accuracy, mean test accuracy
     """
-    train_acc, test_acc = [], []
+    train_acc = []
     for n in nodes:
         train_acc.append(accuracy_score(n.predict(n.sample), n.labels))
-        test_acc.append(accuracy_score(n.predict(n.test_sample), n.test_labels))
+    mean_train_acc = np.mean(train_acc)
 
-    return np.mean(train_acc), np.mean(test_acc)
+    try:
+        test_acc = []
+        for n in nodes:
+            test_acc.append(accuracy_score(n.predict(n.test_sample), n.test_labels))
+        mean_test_acc = np.mean(test_acc)
+    except:
+        mean_test_acc = None
+
+    return mean_train_acc, mean_test_acc

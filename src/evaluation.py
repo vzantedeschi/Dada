@@ -1,3 +1,4 @@
+from math import log
 import numpy as np
 
 from sklearn.metrics import accuracy_score
@@ -5,8 +6,11 @@ from sklearn.metrics import accuracy_score
 def alpha_variance(nodes, *args):
     return np.mean(np.var([n.alpha for n in nodes], axis=0))
 
+def clf_variance(nodes, *args):
+    return np.mean(np.var([n.clf for n in nodes], axis=0))
+
 def loss(nodes, *args):
-    return sum([np.sum(n.compute_weights(distr=False)) for n in nodes])
+    return log(np.mean([np.sum(n.compute_weights(distr=False)) for n in nodes]))
 
 def mean_accuracy(nodes, *args):
     """ returns mean train accuracy, mean test accuracy

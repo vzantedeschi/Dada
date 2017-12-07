@@ -1,8 +1,6 @@
 import numpy as np
 
-from sklearn.mixture import GaussianMixture
-
-from utils import compute_adjacencies
+from utils import compute_adjacencies, partition
 
 class Node():
 
@@ -65,7 +63,10 @@ def centralize_data(nodes):
         x_test.append(n.test_sample)
         y_test.append(n.test_labels)
 
-    node = Node(len(nodes), np.vstack(x), np.concatenate(y), np.vstack(x_test), np.concatenate(y_test))
+    try:
+        node = Node(len(nodes), np.vstack(x), np.concatenate(y), np.vstack(x_test), np.concatenate(y_test))
+    except:
+        node = Node(len(nodes), np.vstack(x), np.concatenate(y))
 
     return node
 
@@ -78,16 +79,8 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
     # add offset dim
     x_copy = np.c_[x, np.ones(M)]
 
-    if cluster_data:
-        gm = GaussianMixture(nb_nodes, init_params="random")
-        gm.fit(x_copy)
-        labels = gm.predict(x_copy)
-        groups = [[x_copy[labels==i], y[labels==i]] for i in range(nb_nodes)]
-
-    else:
-        s = M // nb_nodes   
-        groups = [[x_copy[i*s:(i+1)*s], y[i*s:(i+1)*s]] for i in range(nb_nodes)]
-
+    # clustering
+    groups = partition(x_copy, y, nb_nodes, cluster_data)
 
     nodes = list()
     nei_ids = list()
@@ -99,6 +92,26 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
 
     for ids, n in zip(nei_ids, nodes):
         n.set_neighbors([nodes[i] for i in ids])
+
+    return nodes
+
+def complete_graph(x, y, nb_nodes=3, cluster_data=False):
+    M, _ = x.shape
+
+    # add offset dim
+    x_copy = np.c_[x, np.ones(M)]
+
+    # clustering
+    groups = partition(x_copy, y, nb_nodes, cluster_data)
+
+    nodes = list()
+    for i in range(nb_nodes):
+
+        n = Node(i, *groups[i])
+        nodes.append(n)
+
+    for i, n in enumerate(nodes):
+        n.set_neighbors([nodes[j] for j in range(nb_nodes) if i!=j])
 
     return nodes
 

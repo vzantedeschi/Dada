@@ -1,7 +1,8 @@
 from itertools import combinations
 import numpy as np
 
-from sklearn.datasets import load_iris, load_wine
+from sklearn.datasets import load_breast_cancer, load_iris, load_wine
+from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import normalize, scale
 
 # ---------------------------------------------------------------------- LOAD DATASETS
@@ -24,6 +25,13 @@ def load_iris_dataset():
     # merge two classes, only two classes with labels -1,1
     Y[Y==0] = -1
     Y[Y==2] = 1
+
+    return scale(X), Y
+
+def load_breast_dataset():
+    
+    X, Y = load_breast_cancer(return_X_y=True)
+    Y[Y==0] = -1
 
     return scale(X), Y
 
@@ -78,6 +86,24 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=1, max_samples_per
         y_test[i][rng.choice(len(y_test[i]), replace=False, size=int(sample_error_rate*len(y_test[i])))] *= -1
 
     return n_samples, x, y, x_test, y_test, c, C
+
+# --------------
+
+def partition(x, y, nb_nodes, cluster_data=True):
+    M, _ = x.shape
+    
+    if cluster_data:
+        gm = GaussianMixture(nb_nodes, init_params="random")
+        gm.fit(x)
+        labels = gm.predict(x)
+        groups = [[x[labels==i], y[labels==i]] for i in range(nb_nodes)]
+
+    else:
+        shuffled_ids = np.random.permutation(M)
+        s = M // nb_nodes   
+        groups = [[x[shuffled_ids][i*s:(i+1)*s], y[shuffled_ids][i*s:(i+1)*s]] for i in range(nb_nodes)]
+
+    return groups
 
 def sim_map(arr, sigma):
     """Function used to map [-1,1] into [0,2]

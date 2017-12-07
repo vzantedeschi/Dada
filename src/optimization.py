@@ -15,8 +15,6 @@ def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, simplex=True):
     for n in nodes:
 
         w = n.compute_weights(t)
-
-        # minimize negative gradient
         g = np.dot(n.margin.T, w)  
         
         if simplex:

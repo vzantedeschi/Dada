@@ -4,19 +4,22 @@ import numpy as np
 from sklearn.utils import shuffle
 
 from evaluation import alpha_variance, loss, mean_accuracy
-from network import line_network, synthetic_graph
+from network import complete_graph, synthetic_graph
 from optimization import average_FW, local_FW, neighbor_FW, centralized_FW
-from utils import load_wine_dataset, generate_models, generate_samples
+from utils import load_breast_dataset, generate_models, generate_samples
 
-NB_ITER = 10
-N = 100
-D = 10
-random_state = 20160922
-V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
-_, X, Y, X_test, Y_test, _, _ = generate_samples(V, theta_true, D, random_state=random_state)
-
+NB_ITER = 100
+N = 2
+# D = 10
+# random_state = 20160922
+# V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
+# _, X, Y, X_test, Y_test, _, _ = generate_samples(V, theta_true, D, random_state=random_state)
 # set graph
-nodes = synthetic_graph(X, Y, X_test, Y_test, V, theta_true)
+# nodes = synthetic_graph(X, Y, X_test, Y_test, V, theta_true)
+
+X, Y = load_breast_dataset()
+M, D = X.shape
+nodes = complete_graph(X, Y, nb_nodes=N, cluster_data=False)
 
 # set callbacks for optimization analysis
 callbacks = {
@@ -35,7 +38,7 @@ results = {}
 for k, m in methods.items():
 
     nodes_copy = deepcopy(nodes)
-    results[k] = m(nodes_copy, N, NB_ITER, callbacks=callbacks)
+    results[k] = m(nodes_copy, D, NB_ITER, callbacks=callbacks)
 
 import matplotlib.pyplot as plt
 

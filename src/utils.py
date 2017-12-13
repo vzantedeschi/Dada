@@ -3,6 +3,7 @@ import numpy as np
 
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine
 from sklearn.mixture import GaussianMixture
+from sklearn.model_selection import KFold
 from sklearn.preprocessing import normalize, scale
 
 # ---------------------------------------------------------------------- LOAD DATASETS
@@ -34,6 +35,29 @@ def load_breast_dataset():
     Y[Y==0] = -1
 
     return scale(X), Y
+
+def load_uci_dataset(name, y_pos=0):
+
+    dataset = np.loadtxt(name)
+
+    if y_pos == -1:
+        x, y = np.split(dataset, [-1], axis=1)
+    else:
+        y, x = np.split(dataset, [1], axis=1)
+
+    return scale(x), np.squeeze(y)
+
+# ------------------------------------------------------------------- splitter
+
+def get_split(x, nb_splits, shuffle=True, rnd_state=None):
+    """ generator """
+ 
+    splitter = KFold(n_splits=nb_splits)
+
+    for train_index, test_index in splitter.split(x):
+
+        yield train_index, test_index
+
 
 # code adapted from https://gitlab.inria.fr/magnet/decentralizedpaper/blob/master/notebooks/basic_data_generation.ipynb
 def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2), normalize_centroids=False, random_state=1):
@@ -87,7 +111,7 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=1, max_samples_per
 
     return n_samples, x, y, x_test, y_test, c, C
 
-# --------------
+# ----------------------------------------------------------
 
 def partition(x, y, nb_nodes, cluster_data=True):
     M, _ = x.shape

@@ -50,6 +50,10 @@ class Node():
         self.clf = np.dot(self.alpha.T, self.base_clfs)
         assert self.clf.shape == (1, self.d)
 
+    def set_test_set(self, x, y):
+        self.test_sample = x
+        self.test_labels = y
+
 def centralize_data(nodes):
 
     if len(nodes) == 1:
@@ -97,7 +101,6 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
 
 def complete_graph(x, y, nb_nodes=3, cluster_data=False):
     M, _ = x.shape
-
     # add offset dim
     x_copy = np.c_[x, np.ones(M)]
 

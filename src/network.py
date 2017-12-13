@@ -99,13 +99,13 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
 
     return nodes
 
-def complete_graph(x, y, nb_nodes=3, cluster_data=False):
+def complete_graph(x, y, nb_nodes=3, cluster_data=False, rnd_state=None):
     M, _ = x.shape
     # add offset dim
     x_copy = np.c_[x, np.ones(M)]
 
     # clustering
-    groups = partition(x_copy, y, nb_nodes, cluster_data)
+    groups = partition(x_copy, y, nb_nodes, cluster_data, random_state=None)
 
     nodes = list()
     for i in range(nb_nodes):

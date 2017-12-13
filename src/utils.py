@@ -113,11 +113,11 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=1, max_samples_per
 
 # ----------------------------------------------------------
 
-def partition(x, y, nb_nodes, cluster_data=True):
+def partition(x, y, nb_nodes, cluster_data=True, random_state=None):
     M, _ = x.shape
     
     if cluster_data:
-        gm = GaussianMixture(nb_nodes, init_params="random")
+        gm = GaussianMixture(nb_nodes, init_params="random", random_state=random_state)
         gm.fit(x)
         labels = gm.predict(x)
         groups = [[x[labels==i], y[labels==i]] for i in range(nb_nodes)]

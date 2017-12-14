@@ -104,13 +104,17 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, weighted=Fa
         one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
         # averaging between neighbors
+        new_alphas = []
         for n in nodes:
             alphas = np.hstack([n.alpha] + [i.alpha for i in n.neighbors])
 
             if weighted:
-                n.set_alpha(np.average(alphas, weights=[len(n.sample)] + n.sim, axis=1)[:, None])
+                new_alphas.append(np.average(alphas, weights=[len(n.sample)] + n.sim, axis=1)[:, None])
             else:
-                n.set_alpha(np.mean(alphas, axis=1)[:, None])
+                new_alphas.append(np.mean(alphas, axis=1)[:, None])
+
+        for n, a in zip(nodes, new_alphas):
+            n.set_alpha(a)
 
         results.append({})  
         for k, call in callbacks.items():

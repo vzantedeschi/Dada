@@ -10,7 +10,10 @@ def clf_variance(nodes, *args):
     return np.mean(np.var([n.clf for n in nodes], axis=0))
 
 def loss(nodes, *args):
-    return log(np.mean([np.sum(n.compute_weights(distr=False)) for n in nodes]))
+    return np.sum([log(np.mean(n.compute_weights(distr=False))) for n in nodes])
+
+def central_loss(nodes, *args):
+    return log(np.mean([[n.compute_weights(distr=False)] for n in nodes]))
 
 def mean_accuracy(nodes, *args):
     """ returns mean train accuracy, mean test accuracy

@@ -37,6 +37,10 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=Non
     # get margin matrices A
     for n in nodes:
         n.init_matrices(nb_base_clfs)
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](nodes, *call[1])
     
     # frank-wolfe
     for t in range(nb_iter):
@@ -47,7 +51,7 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=Non
 
         results.append({})  
         for k, call in callbacks.items():
-            results[t][k] = call[0](nodes, *call[1])
+            results[t+1][k] = call[0](nodes, *call[1])
 
     return results
 
@@ -58,6 +62,10 @@ def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, simplex=True, callb
     # get margin matrices A
     for n in nodes:
         n.init_matrices()
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](nodes, *call[1])
     
     gamma = 1
 
@@ -76,13 +84,13 @@ def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, simplex=True, callb
 
         results.append({})  
         for k, call in callbacks.items():
-            results[t][k] = call[0](nodes, *call[1])
+            results[t+1][k] = call[0](nodes, *call[1])
 
     one_frank_wolfe_round(nodes, gamma, beta, simplex)
 
     results.append({})  
     for k, call in callbacks.items():
-        results[t+1][k] = call[0](nodes, *call[1])
+        results[t+2][k] = call[0](nodes, *call[1])
 
     return results
 
@@ -95,6 +103,10 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, weighted=Fa
     # get margin matrices A
     for n in nodes:
         n.init_matrices(nb_base_clfs)
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](nodes, *call[1])
 
     # frank-wolfe
     for t in range(nb_iter):
@@ -118,7 +130,7 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, weighted=Fa
 
         results.append({})  
         for k, call in callbacks.items():
-            results[t][k] = call[0](nodes, *call[1])
+            results[t+1][k] = call[0](nodes, *call[1])
 
     return results
 
@@ -131,6 +143,10 @@ def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbac
 
     list_node = [node]
 
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](list_node, *call[1])
+
     # frank-wolfe
     for t in range(nb_iter):
 
@@ -140,7 +156,7 @@ def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbac
 
         results.append({})  
         for k, call in callbacks.items():
-            results[t][k] = call[0](list_node, *call[1])
+            results[t+1][k] = call[0](list_node, *call[1])
 
     final_alpha = list_node[0].alpha
     for n in nodes:

@@ -24,8 +24,8 @@ class Test(unittest.TestCase):
         for i in range(NB_ITER):
             with self.subTest(i=i):
                 average_FW(self.nodes, self.D, i, callbacks={})
-                self.assertAlmostEqual(alpha_variance(self.nodes), 0)
-                self.assertAlmostEqual(clf_variance(self.nodes), 0)
+                self.assertEqual(alpha_variance(self.nodes), 0)
+                self.assertEqual(clf_variance(self.nodes), 0)
 
 
 if __name__ == '__main__':

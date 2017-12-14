@@ -24,7 +24,7 @@ class TestCentralized(unittest.TestCase):
 
         results = centralized_FW(nodes, D, nb_iter=NB_ITER, callbacks={"mean_accuracy":[mean_accuracy, []], "loss": [loss, []]})
         self.assertEqual(nodes[0].clf.shape, (1, 5))
-        self.assertEqual(len(results), NB_ITER)
+        self.assertEqual(len(results), NB_ITER+1)
 
         acc = mean_accuracy(nodes)
         self.assertGreaterEqual(acc[0], 0.95)

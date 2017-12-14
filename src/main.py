@@ -39,6 +39,7 @@ for k, m in methods.items():
 
     nodes_copy = deepcopy(nodes)
     results[k] = m(nodes_copy, D, NB_ITER, callbacks=callbacks)
+    print(len(nodes_copy))
 
 import matplotlib.pyplot as plt
 

@@ -5,13 +5,15 @@ import numpy as np
 import sys
 sys.path.append('./src/')
 
-from evaluation import alpha_variance, loss, central_loss
+from evaluation import alpha_variance, loss, central_loss, mean_accuracy, central_accuracy
+from optimization import average_FW, centralized_FW
 from network import complete_graph, centralize_data
+from utils import load_iris_dataset
 
-class Test(unittest.TestCase):
+class TestFakeData(unittest.TestCase):
 
     def setUp(self):
-        self.nodes = complete_graph(np.ones((10, 5)), np.ones((10, 5)), nb_nodes=7)
+        self.nodes = complete_graph(np.ones((10, 5)), np.ones((10, 1)), nb_nodes=7)
         for n in self.nodes:
             n.init_matrices(5)
 
@@ -46,6 +48,40 @@ class Test(unittest.TestCase):
         loss1 = central_loss(self.nodes)
         loss2 = loss([node])
         self.assertEqual(loss1, loss2)
+
+    def test_accuracy(self): 
+        # test null accuracy at begging    
+        self.assertEqual(mean_accuracy(self.nodes)[0], 0)
+
+        node = centralize_data(self.nodes)
+        node.init_matrices(5)
+
+        for n in self.nodes:
+            n.set_alpha(np.eye(5, 1))
+        node.set_alpha(np.eye(5, 1))
+
+        acc1 = central_accuracy(self.nodes)[0]
+        acc2 = mean_accuracy([node])[0]
+        self.assertEqual(acc1, acc2)
+
+class TestIris(unittest.TestCase):
+
+    def setUp(self):
+        X, Y = load_iris_dataset()
+        self.D = X.shape[1]
+
+        self.nodes = complete_graph(X, Y, nb_nodes=12) 
+
+    def test_accuracy(self): 
+
+        average_FW(self.nodes, self.D, 10, callbacks={})
+        acc1 = central_accuracy(self.nodes)[0]
+
+        centralized_FW(self.nodes, self.D, 10, callbacks={})
+        acc2 = central_accuracy(self.nodes)[0]
+        acc3 = mean_accuracy(self.nodes)[0]
+        self.assertAlmostEqual(acc2, acc3) 
+        self.assertAlmostEqual(acc1, acc2, places=1)
 
 
 if __name__ == '__main__':

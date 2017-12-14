@@ -129,19 +129,22 @@ def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbac
     node = centralize_data(nodes)
     node.init_matrices(nb_base_clfs)
 
+    list_node = [node]
+
     # frank-wolfe
     for t in range(nb_iter):
 
         gamma = 2 / (2 + t)
 
-        one_frank_wolfe_round([node], gamma, beta, simplex)
+        one_frank_wolfe_round(list_node, gamma, beta, simplex)
 
         results.append({})  
         for k, call in callbacks.items():
-            results[t][k] = call[0]([node], *call[1])
+            results[t][k] = call[0](list_node, *call[1])
 
+    final_alpha = list_node[0].alpha
     for n in nodes:
         n.init_matrices(nb_base_clfs)
-        n.set_alpha(node.alpha)
+        n.set_alpha(final_alpha)
 
     return results

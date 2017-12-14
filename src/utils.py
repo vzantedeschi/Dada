@@ -34,7 +34,7 @@ def load_breast_dataset():
     X, Y = load_breast_cancer(return_X_y=True)
     Y[Y==0] = -1
 
-    return scale(X), Y
+    return X, Y
 
 def load_uci_dataset(name, y_pos=0):
 

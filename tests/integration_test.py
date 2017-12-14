@@ -38,7 +38,7 @@ class TestCentralized(unittest.TestCase):
         NB_ITER = 10
         results = centralized_FW(nodes, D, nb_iter=NB_ITER, callbacks={"mean_accuracy":[mean_accuracy, []]})
 
-        # self.assertGreater(results[9]["mean_accuracy"][0], results[0]["mean_accuracy"][0])
+        self.assertGreaterEqual(results[9]["mean_accuracy"][0], results[0]["mean_accuracy"][0])
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,7 @@
 from itertools import combinations
 import numpy as np
 
+from scipy.sparse import csr_matrix
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
@@ -46,6 +47,45 @@ def load_uci_dataset(name, y_pos=0):
         y, x = np.split(dataset, [1], axis=1)
 
     return scale(x), np.squeeze(y)
+
+def load_csr_matrix(filename, y_pos=0):
+    with open(filename,'r') as in_file:
+        data, indices, indptr = [],[],[0]
+
+        labels = []
+        ptr = 0
+
+        for line in in_file:
+            line = line.split(None, 1)
+            if len(line) == 1: 
+                line += ['']
+            label = line[y_pos]
+            features = line[-1-y_pos]
+            labels.append(float(label))
+
+            f_list = features.split()
+            for f in f_list:
+
+                k,v = f.split(':')
+                data.append(float(v))
+                indices.append(float(k)-1)
+
+            ptr += len(f_list)
+            indptr.append(ptr)
+
+        return csr_matrix((data, indices, indptr)), np.asarray(labels)
+
+def load_sparse_dataset(name, y_pos=0):
+
+    x, y = load_csr_matrix(name, y_pos)
+
+    return scale(x, with_mean=False), y
+
+def load_dense_dataset(name, y_pos=0):
+
+    x, y = load_sparse_dataset(name, y_pos)
+
+    return x.toarray(), y
 
 # ------------------------------------------------------------------- splitter
 

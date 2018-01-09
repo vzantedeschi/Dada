@@ -8,14 +8,17 @@ Boosting algorithms based on Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, simplex=True):
+def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, simplex=True):
     """ Modify nodes!
     """
 
     for n in nodes:
 
         w = n.compute_weights(t)
-        g = np.dot(n.margin.T, w)  
+        g = np.dot(n.margin.T, w) 
+
+        if mu > 0:
+            g -= mu*(n.alpha - sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])) 
         
         if simplex:
             # simplex constraint
@@ -48,6 +51,31 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=Non
         gamma = 2 / (2 + t)
 
         one_frank_wolfe_round(nodes, gamma, beta, simplex)
+
+        results.append({})  
+        for k, call in callbacks.items():
+            results[t+1][k] = call[0](nodes, *call[1])
+
+    return results
+
+def regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
+
+    results = []
+
+    # get margin matrices A
+    for n in nodes:
+        n.init_matrices(nb_base_clfs)
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](nodes, *call[1])
+    
+    # frank-wolfe
+    for t in range(nb_iter):
+
+        gamma = 2 / (2 + t)
+
+        one_frank_wolfe_round(nodes, gamma, beta, 1, mu, simplex)
 
         results.append({})  
         for k, call in callbacks.items():

@@ -3,7 +3,7 @@ import numpy as np
 
 from sklearn.utils import shuffle
 
-from evaluation import alpha_variance, central_accuracy, central_loss
+from evaluation import clf_variance, central_accuracy, central_loss
 from network import line_network, synthetic_graph, true_theta_graph
 from optimization import average_FW, centralized_FW, regularized_local_FW, local_FW
 from utils import generate_models, generate_samples
@@ -11,7 +11,7 @@ from utils import generate_models, generate_samples
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 500
+NB_ITER = 10
 N = 100
 D = 20
 NOISE_R = 0.05
@@ -26,7 +26,7 @@ nodes = synthetic_graph(X, Y, X_test, Y_test, V, theta_true)
 callbacks = {
     'accuracy': [central_accuracy, []],
     'loss': [central_loss, []],
-    'alpha-variance': [alpha_variance, []]
+    'clf-variance': [clf_variance, []]
 }
 
 results = {}
@@ -36,6 +36,9 @@ results["centralized"] = centralized_FW(nodes_copy, D, NB_ITER, callbacks=callba
 nodes_copy = deepcopy(nodes)
 results["regularized"] = regularized_local_FW(nodes_copy, D, NB_ITER, mu=0.1, callbacks=callbacks)
 results["local"] = local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
+results["avg-weighted"] = average_FW(nodes_copy, D, NB_ITER, weighted=True, callbacks=callbacks)
+nodes_copy = deepcopy(nodes)
+results["avg-unweighted"] = average_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
 
 # get results with true thetas
 true_graph = true_theta_graph(nodes_copy, theta_true)
@@ -73,10 +76,10 @@ plt.legend()
 
 plt.subplot(224)
 plt.xlabel('nb iterations')
-plt.ylabel('alpha variance')
+plt.ylabel('classifiers variance')
 
 for k, r_list in results.items():
-    plt.plot(range(len(r_list)), [r['alpha-variance'] for r in r_list], label='{}'.format(k))
+    plt.plot(range(len(r_list)), [r['clf-variance'] for r in r_list], label='{}'.format(k))
 
 plt.legend()
 

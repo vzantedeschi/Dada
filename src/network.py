@@ -148,7 +148,6 @@ def true_theta_graph(nodes, theta_true):
 
     for i, n in enumerate(nodes):
 
-        print(theta_true[i], n.clf)
         m = Node(i, n.sample, n.labels, n.test_sample, n.test_labels)
         m.clf = np.append(theta_true[i], np.zeros((1, n.d - 2)))
         new_graph.append(m)

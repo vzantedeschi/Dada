@@ -13,7 +13,7 @@ def loss(nodes, *args):
     return np.sum([log(np.mean(n.compute_weights(distr=False))) for n in nodes])
 
 def central_loss(nodes, *args):
-    return log(np.mean([[n.compute_weights(distr=False)] for n in nodes]))
+    return log(np.mean(np.concatenate([n.compute_weights(distr=False) for n in nodes])))
 
 def mean_accuracy(nodes, *args):
     """ returns mean train accuracy, mean test accuracy

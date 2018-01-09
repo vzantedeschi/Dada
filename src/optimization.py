@@ -8,17 +8,17 @@ Boosting algorithms based on Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, simplex=True):
+def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex=True):
     """ Modify nodes!
     """
 
-    for n in nodes:
+    for i, n in enumerate(nodes):
 
         w = n.compute_weights(t)
         g = np.dot(n.margin.T, w) 
 
         if mu > 0:
-            g -= mu*(n.alpha - sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])) 
+            g -= mu*(n.alpha - reg_sum[i]) 
         
         if simplex:
             # simplex constraint
@@ -75,7 +75,9 @@ def regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=T
 
         gamma = 2 / (2 + t)
 
-        one_frank_wolfe_round(nodes, gamma, beta, 1, mu, simplex)
+        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
+
+        one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum, simplex)
 
         results.append({})  
         for k, call in callbacks.items():

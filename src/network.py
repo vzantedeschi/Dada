@@ -17,10 +17,10 @@ class Node():
 
     def init_matrices(self, n=None):
         if n:
-            self.n = n
+            self.n = 2 * n
         else:
             self.n = len(self.neighbors)
-        base_clfs = np.eye(self.n, self.d)
+        base_clfs = np.append(np.eye(self.n // 2, self.d), -np.eye(self.n // 2, self.d), axis=0) 
         alpha = np.zeros((self.n, 1))
         self.set_margin_matrix(base_clfs)
         self.set_alpha(alpha)
@@ -79,7 +79,6 @@ def centralize_data(nodes):
 # line network
 def line_network(x, y, nb_nodes=3, cluster_data=False):
     M, _ = x.shape
-
     # add offset dim
     x_copy = np.c_[x, np.ones(M)]
 
@@ -127,13 +126,8 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     nei_ids = list()
     nei_sim = list()
     for i in range(nb_nodes):
-        # add offset dim
-        M, _ = x[i].shape
-        x_copy = np.c_[x[i], np.ones(M)]
-        M, _ = x_test[i].shape
-        x_test_copy = np.c_[x_test[i], np.ones(M)]
 
-        n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
+        n = Node(i, x[i], y[i], x_test[i], y_test[i])
 
         nei_ids.append([])
         nei_sim.append([])
@@ -147,3 +141,16 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
         n.set_neighbors([nodes[i] for i in ids], [len(nodes[i].sample)*s for s,i in zip(sims, ids)])
 
     return nodes
+
+def true_theta_graph(nodes, theta_true):
+
+    new_graph = list()
+
+    for i, n in enumerate(nodes):
+
+        print(theta_true[i], n.clf)
+        m = Node(i, n.sample, n.labels, n.test_sample, n.test_labels)
+        m.clf = np.append(theta_true[i], np.zeros((1, n.d - 2)))
+        new_graph.append(m)
+
+    return new_graph

@@ -23,11 +23,11 @@ def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex
         if simplex:
             # simplex constraint
             j = np.argmax(g)
-            s_k = np.asarray([[1] if i==j else [0] for i in range(n.n)])
+            s_k = np.asarray([[1] if h==j else [0] for h in range(n.n)])
         else:
             # l1 constraint
             j = np.argmin(g)
-            s_k = np.sign(g[j, :]) * beta * np.asarray([[1] if i==j else [0] for i in range(n.n)])
+            s_k = np.sign(g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n)])
 
         n.set_alpha((1 - gamma) * n.alpha + gamma * s_k)
 
@@ -75,7 +75,7 @@ def regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=T
 
         gamma = 2 / (2 + t)
 
-        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
+        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors[1:], n.sim[1:])]) for n in nodes]
 
         one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum, simplex)
 
@@ -148,10 +148,10 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, weighted=Fa
         # averaging between neighbors
         new_alphas = []
         for n in nodes:
-            alphas = np.hstack([n.alpha] + [i.alpha for i in n.neighbors])
+            alphas = np.hstack([i.alpha for i in n.neighbors])
 
             if weighted:
-                new_alphas.append(np.average(alphas, weights=[len(n.sample)] + n.sim, axis=1)[:, None])
+                new_alphas.append(np.average(alphas, weights=n.sim, axis=1)[:, None])
             else:
                 new_alphas.append(np.mean(alphas, axis=1)[:, None])
 

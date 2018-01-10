@@ -34,7 +34,6 @@ def gac_routine(vectors, nodes, nb_iter):
 
         for n in nodes:
 
-            print(np.sum([s*vectors[j] for j, (_, s) in enumerate(zip(n.neighbors, n.sim))], axis=0))
             new_vectors.append(np.sum([s*vectors[j] for j, (_, s) in enumerate(zip(n.neighbors, n.sim))], axis=0))
 
         vectors = deepcopy(new_vectors)
@@ -48,8 +47,6 @@ def lafond_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, c1=5, t=1, simplex=True, c
     # get margin matrices A
     for n in nodes:
         n.init_matrices(nb_base_clfs)
-        print(n.sim)
-        exit(0)
 
     results.append({})  
     for k, call in callbacks.items():
@@ -58,8 +55,8 @@ def lafond_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, c1=5, t=1, simplex=True, c
     # frank-wolfe
     for i in range(nb_iter):
 
-        nb_iter_gac = int(c1 + log(nb_iter))
-        print(nb_iter_gac, i)
+        nb_iter_gac = int(c1 + log(i+1))
+
         gamma = 2 / (2 + i)
 
         # compute init gradients

@@ -1,5 +1,7 @@
 import numpy as np
 
+from random import random
+
 from utils import compute_adjacencies, partition
 
 class Node():
@@ -117,6 +119,25 @@ def complete_graph(x, y, nb_nodes=3, cluster_data=False, rnd_state=None):
 
     return nodes
 
+def random_graph(x, y, nb_nodes=3, prob_edge=1, cluster_data=False, rnd_state=None):
+    M, _ = x.shape
+    # add offset dim
+    x_copy = np.c_[x, np.ones(M)]
+
+    # clustering
+    groups = partition(x_copy, y, nb_nodes, cluster_data, random_state=None)
+
+    nodes = list()
+    for i in range(nb_nodes):
+
+        n = Node(i, *groups[i])
+        nodes.append(n)
+
+    for i, n in enumerate(nodes):
+        n.set_neighbors([nodes[j] for j in range(nb_nodes) if i!=j and random() < prob_edge])
+
+    return nodes
+
 def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     """ edge weight = sim*nb_instances """
 
@@ -138,7 +159,9 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
         nodes.append(n)
 
     for ids, sims, n in zip(nei_ids, nei_sim, nodes):
-        n.set_neighbors([nodes[i] for i in ids], [len(nodes[i].sample)*s for s,i in zip(sims, ids)])
+        weights = [len(n.sample)] + [len(nodes[i].sample)*s for s,i in zip(sims, ids)]
+        sum_weights = sum(weights)
+        n.set_neighbors([n] + [nodes[i] for i in ids], [w / sum_weights for w in weights])
 
     return nodes
 

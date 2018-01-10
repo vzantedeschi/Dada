@@ -92,7 +92,7 @@ def line_network(x, y, nb_nodes=3, cluster_data=False):
     for i in range(nb_nodes):
 
         n = Node(i, *groups[i])
-        nei_ids.append([j for j in [i-1, i+1] if j >= 0 and j < nb_nodes])
+        nei_ids.append([j for j in [i-1, i, i+1] if j >= 0 and j < nb_nodes])
         nodes.append(n)
 
     for ids, n in zip(nei_ids, nodes):
@@ -115,7 +115,8 @@ def complete_graph(x, y, nb_nodes=3, cluster_data=False, rnd_state=None):
         nodes.append(n)
 
     for i, n in enumerate(nodes):
-        n.set_neighbors([nodes[j] for j in range(nb_nodes) if i!=j])
+        neis = [n] + [nodes[j] for j in range(nb_nodes) if i!=j]
+        n.set_neighbors(neis, [1/len(neis)]*len(neis))
 
     return nodes
 
@@ -134,7 +135,8 @@ def random_graph(x, y, nb_nodes=3, prob_edge=1, cluster_data=False, rnd_state=No
         nodes.append(n)
 
     for i, n in enumerate(nodes):
-        n.set_neighbors([nodes[j] for j in range(nb_nodes) if i!=j and random() < prob_edge])
+        neis = [n] + [nodes[j] for j in range(nb_nodes) if i!=j and random() < prob_edge]
+        n.set_neighbors(neis, [1/len(neis)]*len(neis))
 
     return nodes
 

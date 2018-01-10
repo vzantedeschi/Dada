@@ -6,14 +6,15 @@ from sklearn.utils import shuffle
 from evaluation import clf_variance, central_accuracy, central_loss
 from network import line_network, synthetic_graph, true_theta_graph
 from optimization import average_FW, centralized_FW, regularized_local_FW, local_FW
+from related_works import lafond_FW
 from utils import generate_models, generate_samples
 
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 10
-N = 100
-D = 20
+NB_ITER = 50
+N = 10
+D = 2
 NOISE_R = 0.05
 random_state = 2017
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
@@ -39,6 +40,10 @@ results["local"] = local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
 results["avg-weighted"] = average_FW(nodes_copy, D, NB_ITER, weighted=True, callbacks=callbacks)
 nodes_copy = deepcopy(nodes)
 results["avg-unweighted"] = average_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
+
+# lafond method
+nodes_copy = deepcopy(nodes)
+results["lafond"] = lafond_FW(nodes, D, NB_ITER, callbacks=callbacks)
 
 # get results with true thetas
 true_graph = true_theta_graph(nodes_copy, theta_true)

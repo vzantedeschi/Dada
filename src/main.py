@@ -8,8 +8,9 @@ from sklearn.utils import shuffle
 
 from classification import RandomClassifier
 from evaluation import alpha_variance, central_loss, central_accuracy
-from network import complete_graph, synthetic_graph
+from network import random_graph, complete_graph
 from optimization import average_FW, local_FW, neighbor_FW, centralized_FW
+from related_works import lafond_FW
 from utils import load_dense_dataset, load_breast_dataset, generate_models, generate_samples
 
 NB_ITER = 100
@@ -24,7 +25,8 @@ D = test_x.shape[1]
 
 # train_x, train_y = load_breast_dataset()
 
-nodes = complete_graph(train_x, train_y, nb_nodes=N, cluster_data=False)
+nodes = random_graph(train_x, train_y, nb_nodes=N, prob_edge=0.1, cluster_data=True)
+# nodes = complete_graph(train_x, train_y, nb_nodes=N, cluster_data=False)
 
 # set test set
 test_m = test_x.shape[0]
@@ -54,6 +56,10 @@ bdt = AdaBoostClassifier(DecisionTreeClassifier(max_depth=1), algorithm="SAMME",
 bdt.fit(train_x, train_y)
 print(accuracy_score(bdt.predict(train_x), train_y))
 print(accuracy_score(bdt.predict(test_x), test_y))
+
+# lafond method
+nodes_copy = deepcopy(nodes)
+results["lafond"] = lafond_FW(nodes, D, NB_ITER, callbacks=callbacks)
 
 random_clf = RandomClassifier()
 train_acc_rnd = random_clf.score(train_x, train_y)

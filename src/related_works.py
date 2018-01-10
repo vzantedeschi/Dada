@@ -64,7 +64,7 @@ def lafond_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, c1=5, t=1, simplex=True, c
 
         for n in nodes:
 
-            w = n.compute_weights(i)
+            w = n.compute_weights(t)
             g = np.dot(n.margin.T, w)
             
             gradients.append(g)

@@ -15,7 +15,7 @@ def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex
     for i, n in enumerate(nodes):
 
         w = n.compute_weights(t)
-        g = np.dot(n.margin.T, w) 
+        g = n.confidence * np.dot(n.margin.T, w) 
 
         if mu > 0:
             g -= mu*(n.alpha - reg_sum[i]) 
@@ -75,7 +75,7 @@ def regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=T
 
         gamma = 2 / (2 + t)
 
-        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors[1:], n.sim[1:])]) for n in nodes]
+        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
 
         one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum, simplex)
 

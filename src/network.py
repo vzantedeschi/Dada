@@ -13,6 +13,7 @@ class Node():
         self.labels = labels
         self.test_sample = test_sample
         self.test_labels = test_labels
+        self.confidence = 1
 
     def predict(self, sample):
         return np.sign(np.inner(sample, self.clf))
@@ -148,9 +149,14 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     nodes = list()
     nei_ids = list()
     nei_sim = list()
+
+    max_nb_instances = 1
     for i in range(nb_nodes):
 
         n = Node(i, x[i], y[i], x_test[i], y_test[i])
+        nb_instances = len(x[i])
+        n.confidence = nb_instances
+        max_nb_instances = max(max_nb_instances, nb_instances)
 
         nei_ids.append([])
         nei_sim.append([])
@@ -161,9 +167,8 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
         nodes.append(n)
 
     for ids, sims, n in zip(nei_ids, nei_sim, nodes):
-        weights = [len(n.sample)] + [len(nodes[i].sample)*s for s,i in zip(sims, ids)]
-        sum_weights = sum(weights)
-        n.set_neighbors([n] + [nodes[i] for i in ids], [w / sum_weights for w in weights])
+        n.set_neighbors([nodes[i] for i in ids], sims)
+        n.confidence /= max_nb_instances 
 
     return nodes
 

@@ -87,7 +87,7 @@ def load_dense_dataset(name, y_pos=0):
 
     return x.toarray(), y
 
-# ------------------------------------------------------------------- splitter
+# --------------------------------------------------------------- cross-validation
 
 def get_split(x, nb_splits, shuffle=True, rnd_state=None):
     """ generator """
@@ -98,6 +98,15 @@ def get_split(x, nb_splits, shuffle=True, rnd_state=None):
 
         yield train_index, test_index
 
+def get_split_per_list(x, nb_splits, shuffle=True, rnd_state=None):
+    """ generator """
+    
+    nb_lists = len(x)
+    splitters = [KFold(n_splits=nb_splits) for _ in range(nb_lists)]
+
+    for _ in range(nb_splits):
+
+        yield [next(s.split(x[i])) for i, s in enumerate(splitters)]
 
 # code adapted from https://gitlab.inria.fr/magnet/decentralizedpaper/blob/master/notebooks/basic_data_generation.ipynb
 def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2), normalize_centroids=False, random_state=1):
@@ -123,7 +132,7 @@ def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_
 
     return n, theta_true, cluster_indexes
 
-def generate_samples(n, theta_true, dim, min_samples_per_node=1, max_samples_per_node=20, samples_stdev=np.sqrt(1./2), test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
+def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=np.sqrt(1./2), test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
     """Generate train and test samples associated with nodes"""
     
     rng = np.random.RandomState(random_state)

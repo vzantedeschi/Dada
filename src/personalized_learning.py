@@ -3,7 +3,7 @@ import numpy as np
 
 from sklearn.utils import shuffle
 
-from evaluation import clf_variance, central_accuracy, central_loss
+from evaluation import clf_variance, central_accuracy, central_loss, accuracies
 from network import line_network, synthetic_graph, true_theta_graph
 from optimization import average_FW, centralized_FW, regularized_local_FW, local_FW
 from related_works import lafond_FW
@@ -31,19 +31,19 @@ callbacks = {
 }
 
 results = {}
+hist_accuracies = {}
 
 nodes_copy = deepcopy(nodes)
 results["centralized"] = centralized_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
+hist_accuracies["centralized"] = accuracies(nodes_copy)
+
 nodes_copy = deepcopy(nodes)
 results["regularized"] = regularized_local_FW(nodes_copy, D, NB_ITER, mu=0.1, callbacks=callbacks)
-results["local"] = local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
-results["avg-weighted"] = average_FW(nodes_copy, D, NB_ITER, weighted=True, callbacks=callbacks)
-nodes_copy = deepcopy(nodes)
-results["avg-unweighted"] = average_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
+hist_accuracies["regularized"] = accuracies(nodes_copy)
 
-# lafond method
 nodes_copy = deepcopy(nodes)
-results["lafond"] = lafond_FW(nodes, D, NB_ITER, callbacks=callbacks)
+results["local"] = local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
+hist_accuracies["local"] = accuracies(nodes_copy)
 
 # get results with true thetas
 true_graph = true_theta_graph(nodes_copy, theta_true)
@@ -87,5 +87,25 @@ for k, r_list in results.items():
     plt.plot(range(len(r_list)), [r['clf-variance'] for r in r_list], label='{}'.format(k))
 
 plt.legend()
+
+plt.figure(2)
+plt.suptitle("Histograms Train Accuracies")
+
+for i, (k, r_list) in enumerate(hist_accuracies.items()):
+
+    plt.subplot(221 + i)
+    plt.title(k)
+    plt.ylim(0, N)
+    plt.hist(r_list[0], 10, range=(0, 1))
+
+plt.figure(3)
+plt.suptitle("Histograms Test Accuracies")
+
+for i, (k, r_list) in enumerate(hist_accuracies.items()):
+
+    plt.subplot(221 + i)
+    plt.title(k)
+    plt.ylim(0, N)
+    plt.hist(r_list[1], 10, range=(0, 1))
 
 plt.show()

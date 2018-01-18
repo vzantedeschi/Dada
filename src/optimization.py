@@ -1,4 +1,5 @@
 import numpy as np
+from random import choice
 
 from network import centralize_data
 
@@ -14,22 +15,33 @@ def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex
 
     for i, n in enumerate(nodes):
 
-        w = n.compute_weights(t)
-        g = n.confidence * np.dot(n.margin.T, w) 
-
-        if mu > 0:
-            g -= mu*(n.alpha - reg_sum[i]) 
-        
-        if simplex:
-            # simplex constraint
-            j = np.argmax(g)
-            s_k = np.asarray([[1] if h==j else [0] for h in range(n.n)])
+        if reg_sum:
+            r = reg_sum[i]
         else:
-            # l1 constraint
-            j = np.argmin(g)
-            s_k = np.sign(g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n)])
+            r = None
 
-        n.set_alpha((1 - gamma) * n.alpha + gamma * s_k)
+        async_one_frank_wolfe_round(n, gamma, beta, t, mu, r, simplex)
+
+def async_one_frank_wolfe_round(n, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex=True):
+    """ Modify nodes!
+    """
+
+    w = n.compute_weights(t)
+    g = n.confidence * np.dot(n.margin.T, w) 
+
+    if mu > 0:
+        g -= mu*(n.alpha - reg_sum) 
+    
+    if simplex:
+        # simplex constraint
+        j = np.argmax(g)
+        s_k = np.asarray([[1] if h==j else [0] for h in range(n.n)])
+    else:
+        # l1 constraint
+        j = np.argmin(g)
+        s_k = np.sign(g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n)])
+
+    n.set_alpha((1 - gamma) * n.alpha + gamma * s_k)
 
 # --------------------------------------------------------------------- local learning
 
@@ -78,6 +90,37 @@ def regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=T
         reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
 
         one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum, simplex)
+
+        results.append({})  
+        for k, call in callbacks.items():
+            results[t+1][k] = call[0](nodes, *call[1])
+
+    return results
+
+def async_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
+
+    results = []
+
+    # get margin matrices A
+    for n in nodes:
+        n.init_matrices(nb_base_clfs)
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](nodes, *call[1])
+    
+    # frank-wolfe
+    for t in range(nb_iter):
+
+        gamma = 2 / (2 + t)
+
+        # pick one node at random uniformally
+        i = choice(range(len(nodes)))
+        n = nodes[i]
+
+        reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
+
+        async_one_frank_wolfe_round(n, gamma, beta, 1, mu, reg_sum, simplex)
 
         results.append({})  
         for k, call in callbacks.items():

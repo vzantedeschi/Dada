@@ -12,9 +12,9 @@ from utils import generate_models, generate_samples
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 300
-N = 100
-D = 2
+NB_ITER = 500
+N = 10
+D = 20
 NOISE_R = 0.05
 random_state = 2017
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
@@ -55,7 +55,7 @@ acc = central_accuracy(true_graph)
 
 plt.figure(1, figsize=(18, 10))
 
-plt.subplot(221)
+plt.subplot(231)
 plt.xlabel('nb iterations')
 plt.ylabel('train accuracy')
 
@@ -65,7 +65,7 @@ for k, r_list in results.items():
 plt.plot(range(len(r_list)), [acc[0]]*len(r_list), label='true-theta')
 plt.legend()
 
-plt.subplot(222)
+plt.subplot(232)
 plt.xlabel('nb iterations')
 plt.ylabel('test accuracy')
 
@@ -74,7 +74,7 @@ for k, r_list in results.items():
 plt.plot(range(len(r_list)), [acc[1]]*len(r_list), label='true-theta')
 plt.legend()
 
-plt.subplot(223)
+plt.subplot(233)
 plt.xlabel('nb iterations')
 plt.ylabel('loss')
 
@@ -83,12 +83,21 @@ for k, r_list in results.items():
 
 plt.legend()
 
-plt.subplot(224)
+plt.subplot(234)
 plt.xlabel('nb iterations')
 plt.ylabel('classifiers variance')
 
 for k, r_list in results.items():
     plt.plot(range(len(r_list)), [r['clf-variance'] for r in r_list], label='{}'.format(k))
+
+plt.legend()
+
+plt.subplot(235)
+plt.xlabel('nb iterations')
+plt.ylabel('duality gap')
+
+for k, r_list in results.items():
+    plt.plot(range(len(r_list)), [r['duality-gap'] for r in r_list], label='{}'.format(k))
 
 plt.legend()
 

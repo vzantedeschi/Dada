@@ -5,15 +5,15 @@ from sklearn.utils import shuffle
 
 from evaluation import clf_variance, central_accuracy, central_loss, accuracies
 from network import line_network, synthetic_graph, true_theta_graph
-from optimization import average_FW, centralized_FW, regularized_local_FW, local_FW
+from optimization import average_FW, centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW
 from related_works import lafond_FW
 from utils import generate_models, generate_samples
 
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 50
-N = 10
+NB_ITER = 300
+N = 100
 D = 2
 NOISE_R = 0.05
 random_state = 2017
@@ -40,6 +40,10 @@ hist_accuracies["centralized"] = accuracies(nodes_copy)
 nodes_copy = deepcopy(nodes)
 results["regularized"] = regularized_local_FW(nodes_copy, D, NB_ITER, mu=0.1, callbacks=callbacks)
 hist_accuracies["regularized"] = accuracies(nodes_copy)
+
+nodes_copy = deepcopy(nodes)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, D, NB_ITER, mu=0.1, callbacks=callbacks)
+hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 nodes_copy = deepcopy(nodes)
 results["local"] = local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)

@@ -14,6 +14,7 @@ class Node():
         self.test_sample = test_sample
         self.test_labels = test_labels
         self.confidence = 1
+        self.sum_similarities = 1
 
     def predict(self, sample):
         return np.sign(np.inner(sample, self.clf))
@@ -169,6 +170,7 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     for ids, sims, n in zip(nei_ids, nei_sim, nodes):
         n.set_neighbors([nodes[i] for i in ids], sims)
         n.confidence /= max_nb_instances 
+        n.sum_similarities = sum(sims)
 
     return nodes
 

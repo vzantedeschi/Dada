@@ -32,7 +32,7 @@ def frank_wolfe_on_one_node(n, i, gamma, duals, beta=1, t=1, mu=0, reg_sum=None,
     """
 
     w = n.compute_weights(t)
-    g = n.confidence * np.dot(n.margin.T, w) 
+    g = n.sum_similarities * n.confidence * np.dot(n.margin.T, w) 
 
     if mu > 0:
         g -= mu*(n.alpha - reg_sum) 

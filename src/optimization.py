@@ -14,7 +14,7 @@ def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex
     """ Modify nodes!
     """
  
-    duals = [float("inf")] * len(nodes)
+    duals = [0] * len(nodes)
 
     for i, n in enumerate(nodes):
 
@@ -108,7 +108,7 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=Non
     results.append({})  
     for k, call in callbacks.items():
         results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = float("inf")
+    results[0]["duality-gap"] = 0
 
     
     # frank-wolfe
@@ -137,7 +137,7 @@ def global_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, simplex=True, ca
     results.append({})  
     for k, call in callbacks.items():
         results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = float("inf")
+    results[0]["duality-gap"] = 0
     
     # frank-wolfe
     for t in range(nb_iter):
@@ -164,7 +164,7 @@ def regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=T
     results.append({})  
     for k, call in callbacks.items():
         results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = float("inf")
+    results[0]["duality-gap"] = 0
     
     # frank-wolfe
     for t in range(nb_iter):
@@ -190,14 +190,13 @@ def async_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, sim
     # get margin matrices A
     for n in nodes:
         n.init_matrices(nb_base_clfs)
-    
-    # init with local classifiers
-    duals = one_frank_wolfe_round(nodes, 1, beta, simplex)
 
     results.append({})  
     for k, call in callbacks.items():
         results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = sum(duals)
+    results[0]["duality-gap"] = 0
+
+    duals = [0] * N
 
     for t in range(nb_iter):
 
@@ -229,7 +228,7 @@ def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, simplex=True, callb
     results.append({})  
     for k, call in callbacks.items():
         results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = float("inf")
+    results[0]["duality-gap"] = 0
     
     gamma = 1
 
@@ -273,7 +272,7 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, weighted=Fa
     results.append({})  
     for k, call in callbacks.items():
         results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = float("inf")
+    results[0]["duality-gap"] = 0
 
     # frank-wolfe
     for t in range(nb_iter):
@@ -314,7 +313,7 @@ def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbac
     results.append({})  
     for k, call in callbacks.items():
         results[0][k] = call[0](list_node, *call[1])
-    results[0]["duality-gap"] = float("inf")
+    results[0]["duality-gap"] = 0
 
     # frank-wolfe
     for t in range(nb_iter):

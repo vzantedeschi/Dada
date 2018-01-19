@@ -8,8 +8,8 @@ from optimization import regularized_local_FW
 from utils import generate_models, generate_samples, get_split_per_list
 
 # set graph of nodes with local personalized data
-NB_ITER = 5
-N = 150
+NB_ITER = 500
+N = 100
 D = 20
 NOISE_R = 0.05
 random_state = 2017

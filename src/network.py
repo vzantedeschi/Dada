@@ -26,11 +26,14 @@ class Node():
             self.n = len(self.neighbors)
         base_clfs = np.append(np.eye(self.n // 2, self.d), -np.eye(self.n // 2, self.d), axis=0) 
         alpha = np.zeros((self.n, 1))
+        alpha0 = np.zeros((self.n, 1))
         self.set_margin_matrix(base_clfs)
-        self.set_alpha(alpha)
+        self.set_alpha(alpha, alpha0)
 
     def compute_weights(self, temp=1, distr=True):
-        w = np.exp(-np.dot(self.margin, self.alpha) / temp)
+                    
+        w = np.exp(-np.dot(self.margin, self.alpha + self.alpha0) / temp)
+
         if distr:
             w = np.nan_to_num(w / np.sum(w))
         return w
@@ -48,10 +51,14 @@ class Node():
         self.base_clfs = base_clfs
         self.margin = np.inner(self.sample, base_clfs) * self.labels[:, np.newaxis]
 
-    def set_alpha(self, alpha):
-        assert alpha.shape == (len(self.base_clfs), 1), alpha.shape
-        self.alpha = alpha
-        self.clf = np.dot(self.alpha.T, self.base_clfs)
+    def set_alpha(self, alpha=None, alpha0=None):
+
+        if alpha is not None:
+            self.alpha = alpha
+        if alpha0 is not None:
+            self.alpha0 = alpha0
+
+        self.clf = np.dot((self.alpha + self.alpha0).T, self.base_clfs)
         assert self.clf.shape == (1, self.d)
 
     def set_test_set(self, x, y):

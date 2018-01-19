@@ -52,6 +52,49 @@ def frank_wolfe_on_one_node(n, i, gamma, duals, beta=1, t=1, mu=0, reg_sum=None,
     # update duality gap
     duals[i] = (np.dot((s_k - alpha_k).squeeze(), g.squeeze()))
 
+def global_reg_frank_wolfe(nodes, gamma, alpha0, t=1, simplex=True):
+    """ Modify n and duals!
+    """
+    K = len(nodes)
+    gradients = []
+    alphas = []
+
+    for i, n in enumerate(nodes):
+
+        w = n.compute_weights(t)
+        gradients.append(n.sum_similarities * n.confidence * np.dot(n.margin.T, w))
+        alphas.append(n.alpha)
+    
+    gradients.append(np.sum(gradients, axis=0))
+    g = np.vstack(gradients)
+
+    # simplex constraint
+    j = np.argmax(g)
+    s = np.asarray([[1] if h==j else [0] for h in range(n.n*(K+1))])
+
+    # retreive vector to update
+    i = j // n.n # node
+    j = j % n.n # coordinate
+
+    s_i = np.asarray([[1] if h==j else [0] for h in range(n.n)])
+
+    if i == K:
+        alpha0 = (1 - gamma) * alpha0 + gamma * s_i
+
+        for n in nodes:
+            n.set_alpha(alpha0=alpha0)
+    else:
+        alpha = (1 - gamma) * nodes[i].alpha + gamma * s_i
+        nodes[i].set_alpha(alpha)
+        alphas[i] = alpha        
+
+    alphas.append(alpha0)
+
+    # update duality gap
+    dual = (np.dot((s - np.vstack(alphas)).squeeze(), g.squeeze()))
+
+    return dual, alpha0
+
 # --------------------------------------------------------------------- local learning
 
 def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
@@ -74,6 +117,34 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=Non
         gamma = 2 / (2 + t)
 
         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, simplex))
+
+        results.append({})  
+        for k, call in callbacks.items():
+            results[t+1][k] = call[0](nodes, *call[1])
+        results[t+1]["duality-gap"] = dual_gap
+
+    return results
+
+def global_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, simplex=True, callbacks=None):
+
+    results = []
+
+    # get margin matrices A
+    for n in nodes:
+        n.init_matrices(nb_base_clfs)
+    alpha0 = np.zeros((2 * nb_base_clfs, 1))
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](nodes, *call[1])
+    results[0]["duality-gap"] = float("inf")
+    
+    # frank-wolfe
+    for t in range(nb_iter):
+
+        gamma = 2 / (2 + t)
+
+        dual_gap, alpha0 = global_reg_frank_wolfe(nodes, gamma, alpha0, t=1, simplex=simplex)
 
         results.append({})  
         for k, call in callbacks.items():

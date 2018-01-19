@@ -13,21 +13,17 @@ def get_users(data):
 
 def get_data_by_user(finput, users):
 
-    data = []
+    data = set()
 
     for line in finput:
 
         slices = line.split(',')
         slices = list(filter(None, slices))
 
-        if len(slices) < 6:
-            continue
-
-        if int(slices[0]) in users:
-            data.append(slices)
+        if len(slices) == 6 and int(slices[0]) in users:
+            data.add(tuple(slices))
 
     return data
-
 
 with open("datasets/WISDM_users.txt", "r") as users_file:
 

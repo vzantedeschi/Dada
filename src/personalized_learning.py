@@ -5,7 +5,7 @@ from sklearn.utils import shuffle
 
 from evaluation import clf_variance, central_accuracy, central_loss, accuracies
 from network import line_network, synthetic_graph, true_theta_graph
-from optimization import average_FW, centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW
+from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW
 from related_works import lafond_FW
 from utils import generate_models, generate_samples
 
@@ -48,6 +48,10 @@ hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 nodes_copy = deepcopy(nodes)
 results["local"] = local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
 hist_accuracies["local"] = accuracies(nodes_copy)
+
+nodes_copy = deepcopy(nodes)
+results["global-reg"] = global_regularized_local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
+hist_accuracies["global-reg"] = accuracies(nodes_copy)
 
 # get results with true thetas
 true_graph = true_theta_graph(nodes_copy, theta_true)
@@ -106,7 +110,7 @@ plt.suptitle("Histograms Train Accuracies")
 
 for i, (k, r_list) in enumerate(hist_accuracies.items()):
 
-    plt.subplot(221 + i)
+    plt.subplot(231 + i)
     plt.title(k)
     plt.ylim(0, N)
     plt.hist(r_list[0], 10, range=(0, 1))
@@ -116,7 +120,7 @@ plt.suptitle("Histograms Test Accuracies")
 
 for i, (k, r_list) in enumerate(hist_accuracies.items()):
 
-    plt.subplot(221 + i)
+    plt.subplot(231 + i)
     plt.title(k)
     plt.ylim(0, N)
     plt.hist(r_list[1], 10, range=(0, 1))

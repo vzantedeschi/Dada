@@ -187,6 +187,8 @@ def async_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, sim
     results = []
     N = len(nodes)
 
+    iterations = [0] * N
+
     # get margin matrices A
     for n in nodes:
         n.init_matrices(nb_base_clfs)
@@ -200,11 +202,12 @@ def async_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, sim
 
     for t in range(nb_iter):
 
-        gamma = 2 * N / (2 * N + t)
-
         # pick one node at random uniformally
         i = choice(range(len(nodes)))
         n = nodes[i]
+
+        gamma = 2 * N / (2 * N + iterations[i])
+        iterations[i] += 1
 
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
 

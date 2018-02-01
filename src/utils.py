@@ -1,11 +1,21 @@
 from itertools import combinations
 import numpy as np
+import math
 
 from scipy.sparse import csr_matrix
-from sklearn.datasets import load_breast_cancer, load_iris, load_wine
+from sklearn.datasets import load_breast_cancer, load_iris, load_wine, make_moons
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import normalize, scale
+
+def rotate(v1, v2):
+
+    #rotate wrt s
+    c = np.dot(v2, np.asarray([1,0])) / np.linalg.norm(v2)
+    s = math.sin(math.acos(c))
+    rotation = np.asarray([[c, -s], [s, c]])
+
+    return np.dot(v1, rotation)
 
 # ---------------------------------------------------------------------- LOAD DATASETS
 
@@ -131,6 +141,37 @@ def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_
     n = len(theta_true)
 
     return n, theta_true, cluster_indexes
+
+def generate_moons(n, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=0.1, test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
+
+    rng = np.random.RandomState(random_state)
+
+    n_samples = rng.randint(min_samples_per_node, max_samples_per_node, size=n)
+    c = n_samples / n_samples.max()
+    C = np.diag(c)
+
+    x, y = [], []
+    for n_i, s in zip(n_samples, theta_true):
+        x_i, y_i = make_moons(n_i, noise=samples_stdev, random_state=random_state)
+        x_i = np.hstack((rotate(x_i, s), np.zeros((n_i, dim - 2))))
+        x.append(x_i)
+        y_i[y_i==0] = -1
+        y.append(y_i)
+
+    x_test, y_test = [], []
+    for s in theta_true:
+        x_i, y_i = make_moons(test_samples_per_node, noise=samples_stdev, random_state=random_state)
+        x_i = np.hstack((rotate(x_i, s), np.zeros((test_samples_per_node, dim - 2))))
+        x_test.append(x_i)
+        y_i[y_i==0] = -1
+        y_test.append(y_i)
+
+    # Add noise
+    for i in range(n):
+        y[i][rng.choice(len(y[i]), replace=False, size=int(sample_error_rate*len(y[i])))] *= -1
+        y_test[i][rng.choice(len(y_test[i]), replace=False, size=int(sample_error_rate*len(y_test[i])))] *= -1
+
+    return n_samples, x, y, x_test, y_test, c, C
 
 def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=np.sqrt(1./2), test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
     """Generate train and test samples associated with nodes"""

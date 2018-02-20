@@ -161,7 +161,12 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     max_nb_instances = 1
     for i in range(nb_nodes):
 
-        n = Node(i, x[i], y[i], x_test[i], y_test[i])
+        M, _ = x[i].shape
+        x_copy = np.c_[x[i], np.ones(M)]
+        M, _ = x_test[i].shape
+        x_test_copy = np.c_[x_test[i], np.ones(M)]
+
+        n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
         nb_instances = len(x[i])
         n.confidence = nb_instances
         max_nb_instances = max(max_nb_instances, nb_instances)
@@ -179,7 +184,7 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
         n.confidence /= max_nb_instances 
         n.sum_similarities = sum(sims)
 
-    return nodes
+    return nodes, adj_matrix, similarities
 
 def true_theta_graph(nodes, theta_true):
 

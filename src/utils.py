@@ -6,7 +6,7 @@ from scipy.sparse import csr_matrix
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine, make_moons
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
-from sklearn.preprocessing import normalize, scale
+from sklearn.preprocessing import normalize, scale, MinMaxScaler
 
 def rotate(v1, v2):
 
@@ -145,7 +145,7 @@ def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_
 def generate_moons(n, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=0.1, test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
 
     rng = np.random.RandomState(random_state)
-
+    # scaler = MinMaxScaler((-1, 1))
     n_samples = rng.randint(min_samples_per_node, max_samples_per_node, size=n)
     c = n_samples / n_samples.max()
     C = np.diag(c)
@@ -153,6 +153,7 @@ def generate_moons(n, theta_true, dim, min_samples_per_node=3, max_samples_per_n
     x, y = [], []
     for n_i, s in zip(n_samples, theta_true):
         x_i, y_i = make_moons(n_i, noise=samples_stdev, random_state=random_state)
+        # x_i = scaler.fit_transform(x_i)
         x_i = np.hstack((rotate(x_i, s), np.zeros((n_i, dim - 2))))
         x.append(x_i)
         y_i[y_i==0] = -1
@@ -161,6 +162,7 @@ def generate_moons(n, theta_true, dim, min_samples_per_node=3, max_samples_per_n
     x_test, y_test = [], []
     for s in theta_true:
         x_i, y_i = make_moons(test_samples_per_node, noise=samples_stdev, random_state=random_state)
+        # x_i = scaler.fit_transform(x_i)
         x_i = np.hstack((rotate(x_i, s), np.zeros((test_samples_per_node, dim - 2))))
         x_test.append(x_i)
         y_i[y_i==0] = -1

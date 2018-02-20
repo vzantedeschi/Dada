@@ -21,7 +21,7 @@ V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, 
 _, X, Y, X_test, Y_test, _, _ = generate_samples(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
 
 # set graph
-nodes = synthetic_graph(X, Y, X_test, Y_test, V, theta_true)
+nodes, adj_matrix, similarities = synthetic_graph(X, Y, X_test, Y_test, V, theta_true)
 
 # set callbacks for optimization analysis
 callbacks = {

@@ -38,7 +38,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
         test_y.append(Y[i][inds[1]])
 
     # set graph
-    nodes = synthetic_graph(train_x, train_y, test_x, test_y, V, theta_true)
+    nodes, _, _ = synthetic_graph(train_x, train_y, test_x, test_y, V, theta_true)
 
     for mu in MU_LIST:
 

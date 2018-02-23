@@ -16,14 +16,14 @@ class TestCentralized(unittest.TestCase):
     def test_iris(self):
         X, Y = load_iris_dataset()
         D = X.shape[1]
-        NB_ITER = 10
+        NB_ITER = 100
 
         # set graph
         nodes = line_network(X, Y, nb_nodes=1)
         self.assertEqual(nodes[0].sample.shape[1], 5)
 
-        results = centralized_FW(nodes, D, nb_iter=NB_ITER, callbacks={"mean_accuracy":[mean_accuracy, []], "loss": [loss, []]})
-        self.assertEqual(nodes[0].clf.shape, (1, 5))
+        results = centralized_FW(nodes, 2*D, nb_iter=NB_ITER, callbacks={"mean_accuracy":[mean_accuracy, []], "loss": [loss, []]})
+        self.assertEqual(nodes[0].alpha.shape, (2*D, 1))
         self.assertEqual(len(results), NB_ITER+1)
 
         acc = mean_accuracy(nodes)

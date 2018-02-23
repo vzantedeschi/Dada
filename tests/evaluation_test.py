@@ -5,6 +5,7 @@ import numpy as np
 import sys
 sys.path.append('./src/')
 
+from classification import get_double_basis
 from evaluation import alpha_variance, loss, central_loss, mean_accuracy, central_accuracy
 from optimization import average_FW, centralized_FW
 from network import complete_graph, centralize_data
@@ -15,7 +16,7 @@ class TestFakeData(unittest.TestCase):
     def setUp(self):
         self.nodes = complete_graph(np.ones((10, 5)), np.ones((10, 1)), nb_nodes=7)
         for n in self.nodes:
-            n.init_matrices(5)
+            n.init_matrices(6, get_double_basis)
 
     def test_alpha_variance(self): 
         # test alphas all equal and null at initialization    
@@ -23,7 +24,7 @@ class TestFakeData(unittest.TestCase):
 
         # test null variance 
         for n in self.nodes:
-            n.set_alpha(np.eye(5, 1))
+            n.set_alpha(np.eye(6, 1))
 
         self.assertEqual(alpha_variance(self.nodes), 0)
 
@@ -39,11 +40,12 @@ class TestFakeData(unittest.TestCase):
         self.assertEqual(central_loss(self.nodes), 0)
 
         node = centralize_data(self.nodes)
-        node.init_matrices(5)
+
+        node.init_matrices(6, get_double_basis)
 
         for n in self.nodes:
-            n.set_alpha(np.eye(5, 1))
-        node.set_alpha(np.eye(5, 1))
+            n.set_alpha(np.eye(6, 1))
+        node.set_alpha(np.eye(6, 1))
 
         loss1 = central_loss(self.nodes)
         loss2 = loss([node])
@@ -54,11 +56,11 @@ class TestFakeData(unittest.TestCase):
         self.assertEqual(mean_accuracy(self.nodes)[0], 0)
 
         node = centralize_data(self.nodes)
-        node.init_matrices(5)
+        node.init_matrices(6, get_double_basis)
 
         for n in self.nodes:
-            n.set_alpha(np.eye(5, 1))
-        node.set_alpha(np.eye(5, 1))
+            n.set_alpha(np.eye(6, 1))
+        node.set_alpha(np.eye(6, 1))
 
         acc1 = central_accuracy(self.nodes)[0]
         acc2 = mean_accuracy([node])[0]
@@ -74,10 +76,10 @@ class TestIris(unittest.TestCase):
 
     def test_accuracy(self): 
 
-        average_FW(self.nodes, self.D, 10, callbacks={})
+        average_FW(self.nodes, self.D, nb_iter=10, callbacks={})
         acc1 = central_accuracy(self.nodes)[0]
 
-        centralized_FW(self.nodes, self.D, 10, callbacks={})
+        centralized_FW(self.nodes, self.D, nb_iter=10, callbacks={})
         acc2 = central_accuracy(self.nodes)[0]
         acc3 = mean_accuracy(self.nodes)[0]
         self.assertAlmostEqual(acc2, acc3) 

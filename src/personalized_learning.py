@@ -3,7 +3,7 @@ import numpy as np
 
 from sklearn.utils import shuffle
 
-from evaluation import clf_variance, central_accuracy, central_loss, accuracies
+from evaluation import central_accuracy, central_loss, accuracies
 from network import line_network, synthetic_graph, true_theta_graph
 from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW
 from related_works import lafond_FW
@@ -12,8 +12,8 @@ from utils import generate_models, generate_samples
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 500
-N = 10
+NB_ITER = 50
+N = 100
 D = 20
 NOISE_R = 0.05
 random_state = 2017
@@ -26,31 +26,30 @@ nodes, adj_matrix, similarities = synthetic_graph(X, Y, X_test, Y_test, V, theta
 # set callbacks for optimization analysis
 callbacks = {
     'accuracy': [central_accuracy, []],
-    'loss': [central_loss, []],
-    'clf-variance': [clf_variance, []]
+    'loss': [central_loss, []]
 }
 
 results = {}
 hist_accuracies = {}
 
-nodes_copy = deepcopy(nodes)
-results["centralized"] = centralized_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
-hist_accuracies["centralized"] = accuracies(nodes_copy)
+nodes_centralized = deepcopy(nodes)
+results["centralized"] = centralized_FW(nodes_centralized, 2*D, nb_iter=NB_ITER, callbacks=callbacks)
+hist_accuracies["centralized"] = accuracies(nodes_centralized)
+
+nodes_regularized = deepcopy(nodes)
+results["regularized"] = regularized_local_FW(nodes_regularized, 2*D, nb_iter=NB_ITER, mu=1, callbacks=callbacks)
+hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
 nodes_copy = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_copy, D, NB_ITER, mu=0.1, callbacks=callbacks)
-hist_accuracies["regularized"] = accuracies(nodes_copy)
-
-nodes_copy = deepcopy(nodes)
-results["async_regularized"] = async_regularized_local_FW(nodes_copy, D, NB_ITER, mu=0.1, callbacks=callbacks)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, 2*D, nb_iter=NB_ITER, mu=1, callbacks=callbacks)
 hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 nodes_copy = deepcopy(nodes)
-results["local"] = local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
+results["local"] = local_FW(nodes_copy, 2*D, nb_iter=NB_ITER, callbacks=callbacks)
 hist_accuracies["local"] = accuracies(nodes_copy)
 
 nodes_copy = deepcopy(nodes)
-results["global-reg"] = global_regularized_local_FW(nodes_copy, D, NB_ITER, callbacks=callbacks)
+results["global-reg"] = global_regularized_local_FW(nodes_copy, 2*D, nb_iter=NB_ITER, callbacks=callbacks)
 hist_accuracies["global-reg"] = accuracies(nodes_copy)
 
 # get results with true thetas
@@ -88,15 +87,6 @@ for k, r_list in results.items():
 plt.legend()
 
 plt.subplot(234)
-plt.xlabel('nb iterations')
-plt.ylabel('classifiers variance')
-
-for k, r_list in results.items():
-    plt.plot(range(len(r_list)), [r['clf-variance'] for r in r_list], label='{}'.format(k))
-
-plt.legend()
-
-plt.subplot(235)
 plt.xlabel('nb iterations')
 plt.ylabel('duality gap')
 

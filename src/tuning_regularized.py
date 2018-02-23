@@ -25,7 +25,7 @@ callbacks = {
     'accuracy': [central_accuracy, []]
 }
 
-results = {mu: list() for mu in MU_LIST}
+results = {mu: 0. for mu in MU_LIST}
 
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
@@ -46,10 +46,6 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
         r = regularized_local_FW(nodes_copy, D, NB_ITER, mu=mu, callbacks=callbacks)
 
         # keep value of last iteration
-        results[mu].append(r[NB_ITER]["accuracy"][1])
-
-for mu, accs in results.items():
-
-    results[mu] = mean(accs)
+        results[mu] += r[NB_ITER]["accuracy"][1]
 
 print("best mu", max(results, key=results.get))

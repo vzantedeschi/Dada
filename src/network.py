@@ -2,6 +2,7 @@ import numpy as np
 
 from random import random
 
+from classification import get_basis, LinearClassifier
 from utils import compute_adjacencies, partition
 
 class Node():
@@ -15,19 +16,22 @@ class Node():
         self.test_labels = test_labels
         self.confidence = 1
         self.sum_similarities = 1
+        self.clf = None
 
     def predict(self, sample):
-        return np.sign(np.inner(sample, self.clf))
+        if self.clf is None:
+            return np.sign(np.dot(self.get_predictions(sample), self.alpha))
+        return self.clf.predict(sample)
 
-    def init_matrices(self, n=None):
-        if n:
-            self.n = 2 * n
-        else:
-            self.n = len(self.neighbors)
-        base_clfs = np.append(np.eye(self.n // 2, self.d), -np.eye(self.n // 2, self.d), axis=0) 
+    def init_matrices(self, n, base_clfs_getter):
+        # set weak classifiers
+        self.n = n
+        self.base_clfs = base_clfs_getter(n, self.d)
+
+        # set alpha and A
         alpha = np.zeros((self.n, 1))
         alpha0 = np.zeros((self.n, 1))
-        self.set_margin_matrix(base_clfs)
+        self.set_margin_matrix()
         self.set_alpha(alpha, alpha0)
 
     def compute_weights(self, temp=1, distr=True):
@@ -38,18 +42,21 @@ class Node():
             w = np.nan_to_num(w / np.sum(w))
         return w
 
-    def get_neighbors_clfs(self):
-        nei_clfs = np.vstack([n.clf for n in self.neighbors])
-        return nei_clfs
+    def get_neighbors_alphas(self):
+        nei_alpha = np.vstack([n.alpha for n in self.neighbors])
+        return nei_alpha
+
+    def get_predictions(self, sample):
+        """ get a prediction per weak classifier """
+        return np.hstack([c.predict(sample) for c in self.base_clfs])
 
     def set_neighbors(self, neighbors, sim=None):
         self.neighbors = neighbors
         self.sim = sim
 
-    def set_margin_matrix(self, base_clfs):
+    def set_margin_matrix(self):
         # set margin matrix A
-        self.base_clfs = base_clfs
-        self.margin = np.inner(self.sample, base_clfs) * self.labels[:, np.newaxis]
+        self.margin = self.get_predictions(self.sample) * self.labels[:, np.newaxis]
 
     def set_alpha(self, alpha=None, alpha0=None):
 
@@ -57,9 +64,6 @@ class Node():
             self.alpha = alpha
         if alpha0 is not None:
             self.alpha0 = alpha0
-
-        self.clf = np.dot((self.alpha + self.alpha0).T, self.base_clfs)
-        assert self.clf.shape == (1, self.d)
 
     def set_test_set(self, x, y):
         self.test_sample = x
@@ -193,7 +197,7 @@ def true_theta_graph(nodes, theta_true):
     for i, n in enumerate(nodes):
 
         m = Node(i, n.sample, n.labels, n.test_sample, n.test_labels)
-        m.clf = np.append(theta_true[i], np.zeros((1, n.d - 2)))
+        m.clf = LinearClassifier(n.n, np.append(theta_true[i], np.zeros((1, n.d - 2))))
         new_graph.append(m)
 
     return new_graph

@@ -1,14 +1,14 @@
 import numpy as np
 from random import choice
 
+from classification import get_double_basis
 from network import centralize_data
 
 """
-Boosting algorithms based on Frank Wolfe optimization
+Boosting algorithms using Frank Wolfe optimization
 """
 
 # ----------------------------------------------------------- specific utils
-
 
 def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex=True):
     """ Modify nodes!
@@ -97,13 +97,13 @@ def global_reg_frank_wolfe(nodes, gamma, alpha0, t=1, simplex=True):
 
 # --------------------------------------------------------------------- local learning
 
-def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
+def local_FW(nodes, nb_base_clfs, clfs_getter=get_double_basis, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     results = []
 
     # get margin matrices A
     for n in nodes:
-        n.init_matrices(nb_base_clfs)
+        n.init_matrices(nb_base_clfs, clfs_getter)
 
     results.append({})  
     for k, call in callbacks.items():
@@ -125,14 +125,14 @@ def local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=Non
 
     return results
 
-def global_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, simplex=True, callbacks=None):
+def global_regularized_local_FW(nodes, nb_base_clfs, clfs_getter=get_double_basis, nb_iter=1, simplex=True, callbacks=None):
 
     results = []
 
     # get margin matrices A
     for n in nodes:
-        n.init_matrices(nb_base_clfs)
-    alpha0 = np.zeros((2 * nb_base_clfs, 1))
+        n.init_matrices(nb_base_clfs, clfs_getter)
+    alpha0 = np.zeros((nb_base_clfs, 1))
 
     results.append({})  
     for k, call in callbacks.items():
@@ -153,13 +153,13 @@ def global_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, simplex=True, ca
 
     return results
 
-def regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
+def regularized_local_FW(nodes, nb_base_clfs, clfs_getter=get_double_basis, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
 
     results = []
 
     # get margin matrices A
     for n in nodes:
-        n.init_matrices(nb_base_clfs)
+        n.init_matrices(nb_base_clfs, clfs_getter)
 
     results.append({})  
     for k, call in callbacks.items():
@@ -182,7 +182,7 @@ def regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=T
 
     return results
 
-def async_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
+def async_regularized_local_FW(nodes, nb_base_clfs, clfs_getter=get_double_basis, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
 
     results = []
     N = len(nodes)
@@ -191,7 +191,7 @@ def async_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, sim
 
     # get margin matrices A
     for n in nodes:
-        n.init_matrices(nb_base_clfs)
+        n.init_matrices(nb_base_clfs, clfs_getter)
 
     results.append({})  
     for k, call in callbacks.items():
@@ -220,57 +220,15 @@ def async_regularized_local_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, mu=1, sim
 
     return results
 
-def neighbor_FW(nodes, nb_base_clfs=None, nb_iter=1, beta=1, simplex=True, callbacks=None):
-
-    results = []
-
-    # get margin matrices A
-    for n in nodes:
-        n.init_matrices()
-
-    results.append({})  
-    for k, call in callbacks.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
-    
-    gamma = 1
-
-    # frank-wolfe
-    for t in range(nb_iter-1):
-
-        gamma = 2 / (2 + t)
-
-        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, simplex))
-
-        for n in nodes:
-            new_clfs = n.get_neighbors_clfs()
-            n.set_margin_matrix(new_clfs)
-            new_alpha = np.dot(n.clf, np.linalg.pinv(new_clfs)).T
-            n.set_alpha(new_alpha)
-
-        results.append({})  
-        for k, call in callbacks.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
-
-    dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, simplex))
-
-    results.append({})  
-    for k, call in callbacks.items():
-        results[t+2][k] = call[0](nodes, *call[1])
-    results[t+2]["duality-gap"] = dual_gap
-
-    return results
-
 # ---------------------------------------------------------------- global consensus FW
 
-def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, weighted=False, callbacks=None):
+def average_FW(nodes, nb_base_clfs, clfs_getter=get_double_basis, nb_iter=1, beta=1, simplex=True, weighted=False, callbacks=None):
 
     results = []
     
     # get margin matrices A
     for n in nodes:
-        n.init_matrices(nb_base_clfs)
+        n.init_matrices(nb_base_clfs, clfs_getter)
 
     results.append({})  
     for k, call in callbacks.items():
@@ -304,12 +262,12 @@ def average_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, weighted=Fa
 
     return results
 
-def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
+def centralized_FW(nodes, nb_base_clfs, clfs_getter=get_double_basis, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     results = []
 
     node = centralize_data(nodes)
-    node.init_matrices(nb_base_clfs)
+    node.init_matrices(nb_base_clfs, clfs_getter)
 
     list_node = [node]
 
@@ -332,7 +290,7 @@ def centralized_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, simplex=True, callbac
 
     final_alpha = list_node[0].alpha
     for n in nodes:
-        n.init_matrices(nb_base_clfs)
+        n.init_matrices(nb_base_clfs, clfs_getter)
         n.set_alpha(final_alpha)
 
     return results

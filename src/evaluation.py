@@ -6,9 +6,6 @@ from sklearn.metrics import accuracy_score
 def alpha_variance(nodes, *args):
     return np.around(np.mean(np.var([n.alpha for n in nodes], axis=0)), decimals=10)
 
-def clf_variance(nodes, *args):
-    return np.around(np.mean(np.var([n.clf for n in nodes], axis=0)), decimals=10)
-
 def loss(nodes, *args):
     return np.sum([log(np.mean(n.compute_weights(distr=False))) for n in nodes])
 

@@ -25,6 +25,11 @@ callbacks = {
     'accuracy': [central_accuracy, []]
 }
 
+base_clfs_args = {
+    'n': 2*D,
+    'd': D+1,
+}
+
 results = {mu: 0. for mu in MU_LIST}
 
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
@@ -43,7 +48,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
     for mu in MU_LIST:
 
         nodes_copy = deepcopy(nodes)
-        r = regularized_local_FW(nodes_copy, D, NB_ITER, mu=mu, callbacks=callbacks)
+        r = regularized_local_FW(nodes_copy, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, mu=mu, callbacks=callbacks)
 
         # keep value of last iteration
         results[mu] += r[NB_ITER]["accuracy"][1]

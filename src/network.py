@@ -23,10 +23,10 @@ class Node():
             return np.sign(np.dot(self.get_predictions(sample), self.alpha))
         return self.clf.predict(sample)
 
-    def init_matrices(self, n, base_clfs_getter):
+    def init_matrices(self, base_clfs):
         # set weak classifiers
-        self.n = n
-        self.base_clfs = base_clfs_getter(n, self.d)
+        self.n = len(base_clfs)
+        self.base_clfs = base_clfs
 
         # set alpha and A
         alpha = np.zeros((self.n, 1))

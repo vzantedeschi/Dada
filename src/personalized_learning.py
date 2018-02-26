@@ -29,27 +29,32 @@ callbacks = {
     'loss': [central_loss, []]
 }
 
+base_clfs_args = {
+    'n': 2*D,
+    'd': D+1,
+}
+
 results = {}
 hist_accuracies = {}
 
 nodes_centralized = deepcopy(nodes)
-results["centralized"] = centralized_FW(nodes_centralized, 2*D, nb_iter=NB_ITER, callbacks=callbacks)
+results["centralized"] = centralized_FW(nodes_centralized, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, callbacks=callbacks)
 hist_accuracies["centralized"] = accuracies(nodes_centralized)
 
 nodes_regularized = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_regularized, 2*D, nb_iter=NB_ITER, mu=1, callbacks=callbacks)
+results["regularized"] = regularized_local_FW(nodes_regularized, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, mu=1, callbacks=callbacks)
 hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
 nodes_copy = deepcopy(nodes)
-results["async_regularized"] = async_regularized_local_FW(nodes_copy, 2*D, nb_iter=NB_ITER, mu=1, callbacks=callbacks)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, mu=1, callbacks=callbacks)
 hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 nodes_copy = deepcopy(nodes)
-results["local"] = local_FW(nodes_copy, 2*D, nb_iter=NB_ITER, callbacks=callbacks)
+results["local"] = local_FW(nodes_copy, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, callbacks=callbacks)
 hist_accuracies["local"] = accuracies(nodes_copy)
 
 nodes_copy = deepcopy(nodes)
-results["global-reg"] = global_regularized_local_FW(nodes_copy, 2*D, nb_iter=NB_ITER, callbacks=callbacks)
+results["global-reg"] = global_regularized_local_FW(nodes_copy, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, callbacks=callbacks)
 hist_accuracies["global-reg"] = accuracies(nodes_copy)
 
 # get results with true thetas
@@ -114,5 +119,48 @@ for i, (k, r_list) in enumerate(hist_accuracies.items()):
     plt.title(k)
     plt.ylim(0, N)
     plt.hist(r_list[1], 10, range=(0, 1))
+
+NODE = 56
+
+plt.figure(2, figsize=(16, 5))
+# our method
+plt.subplot(121)
+
+# training data
+X = nodes_regularized[NODE].sample
+Y = nodes_regularized[NODE].labels
+
+X_test = nodes_regularized[NODE].test_sample
+Y_test = nodes_regularized[NODE].test_labels
+
+# construct grid
+x_min,x_max = X_test[:,0].min() - 0.2, X_test[:,0].max() + 0.2
+y_min, y_max = X_test[:,1].min() - 0.2, X_test[:,1].max() + 0.2
+xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02), np.arange(y_min, y_max, 0.02))
+
+# expand dimensions
+grid_set = np.c_[xx.ravel(), yy.ravel()]
+grid_set = np.hstack((grid_set, np.zeros((len(grid_set), D - 1))))
+y = nodes_regularized[NODE].predict(grid_set).reshape(xx.shape)
+
+plt.scatter(X[:,0], X[:,1], c=Y, cmap=plt.cm.coolwarm, linewidths=10)
+plt.scatter(X_test[:,0], X_test[:,1], c=Y_test, cmap=plt.cm.coolwarm)
+
+plt.contourf(xx, yy, y, cmap=plt.cm.coolwarm, alpha=0.2)
+
+# colearning
+plt.subplot(122)
+
+# training data
+X = nodes_regularized[NODE].sample
+Y = nodes_regularized[NODE].labels
+
+grid_set = np.c_[xx.ravel(), yy.ravel()]
+grid_set = np.hstack((grid_set, np.zeros((len(grid_set), D - 1))))
+y = nodes_centralized[NODE].predict(grid_set).reshape(xx.shape)
+
+plt.scatter(X[:,0], X[:,1], c=Y, cmap=plt.cm.coolwarm, linewidths=10)
+plt.contourf(xx, yy, y, cmap=plt.cm.coolwarm, alpha=0.2)
+plt.scatter(X_test[:,0], X_test[:,1], c=Y_test, cmap=plt.cm.coolwarm)
 
 plt.show()

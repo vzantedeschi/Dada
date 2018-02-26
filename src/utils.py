@@ -8,6 +8,16 @@ from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import normalize, scale, MinMaxScaler
 
+def get_min_max(sample):
+    
+    vmin, vmax = float("inf"), -float("inf")
+
+    for l in sample:
+        vmin = min(vmin, np.min(l))
+        vmax = max(vmax, np.max(l))
+
+    return vmin, vmax
+
 def rotate(v1, v2):
 
     #rotate wrt s

@@ -31,7 +31,7 @@ class LinearClassifier(WeakClassifier):
             self.h = h
 
     def predict(self, x):
-        return np.sign(np.inner(x, self.h))[:, None]
+        return np.sign(np.inner(x, self.h))
 
 class RandomClassifier(WeakClassifier):
 
@@ -49,7 +49,7 @@ class StumpClassifier(WeakClassifier):
         self.sign = sign
 
     def predict(self, x):
-        return self.sign * (1 - 2*(x[:, self.id] > self.thr))[:, None]
+        return self.sign * (1 - 2*(x[:, self.id] > self.thr))
 
 
 # ---------------------------------------------------------------- BASE CLFS GENERATION
@@ -92,3 +92,33 @@ def get_rnd_linear_clfs(n, d, rnd_seed, *args):
     base_clfs += [LinearClassifier(d, -v) for v in vectors]
 
     return base_clfs
+
+def get_scipy_selected_stumps(x, y, d):
+
+    from sklearn.ensemble import AdaBoostClassifier
+    from sklearn.tree import DecisionTreeClassifier
+
+    base_clfs = []
+    ada_clfs = []
+
+    dt_stump = DecisionTreeClassifier(max_depth=1, min_samples_leaf=1)
+
+    # estimators per node
+    nb_nodes = len(x)
+    nb_estimators = [d // nb_nodes for i in x]
+    nb_estimators[0] += d - sum(nb_estimators)
+
+    for x_node, y_node, e in zip(x, y, nb_estimators):
+
+        M, _ = x_node.shape
+        x_copy = np.c_[x_node, np.ones(M)]
+
+        adaboosted_clf = AdaBoostClassifier(base_estimator=dt_stump, n_estimators=e)
+        adaboosted_clf.fit(x_copy, y_node)
+
+        ada_clfs.append(adaboosted_clf)
+        base_clfs += adaboosted_clf.estimators_
+
+    assert len(base_clfs) == d
+
+    return base_clfs, ada_clfs

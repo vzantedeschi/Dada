@@ -5,11 +5,11 @@ from copy import deepcopy
 import sys
 sys.path.append('./src/')
 
-from classification import get_stumps
+from classification import get_stumps, get_scipy_selected_stumps
 from evaluation import mean_accuracy, loss
-from network import line_network, complete_graph
-from optimization import centralized_FW
-from utils import load_iris_dataset, load_breast_dataset
+from network import line_network, complete_graph, synthetic_graph
+from optimization import centralized_FW, local_FW
+from utils import load_iris_dataset, load_breast_dataset, generate_models, generate_moons
 
 def toy_dataset(m, seed=0, t="xor", d=2):
     import numpy as np
@@ -46,37 +46,37 @@ def toy_dataset(m, seed=0, t="xor", d=2):
 
     return X, Y
 
-class TestCentralized(unittest.TestCase):
+# class TestCentralized(unittest.TestCase):
 
-    def test_iris(self):
-        X, Y = load_iris_dataset()
-        D = X.shape[1]
-        NB_ITER = 100
+#     def test_iris(self):
+#         X, Y = load_iris_dataset()
+#         D = X.shape[1]
+#         NB_ITER = 100
 
-        # set graph
-        nodes = line_network(X, Y, nb_nodes=1)
-        self.assertEqual(nodes[0].sample.shape[1], 5)
+#         # set graph
+#         nodes = line_network(X, Y, nb_nodes=1)
+#         self.assertEqual(nodes[0].sample.shape[1], 5)
 
-        results = centralized_FW(nodes, 2*D, nb_iter=NB_ITER, callbacks={"mean_accuracy":[mean_accuracy, []], "loss": [loss, []]})
-        self.assertEqual(nodes[0].alpha.shape, (2*D, 1))
-        self.assertEqual(len(results), NB_ITER+1)
+#         results = centralized_FW(nodes, 2*D, nb_iter=NB_ITER, callbacks={"mean_accuracy":[mean_accuracy, []], "loss": [loss, []]})
+#         self.assertEqual(nodes[0].alpha.shape, (2*D, 1))
+#         self.assertEqual(len(results), NB_ITER+1)
 
-        acc = mean_accuracy(nodes)
-        self.assertGreaterEqual(acc[0], 0.95)
+#         acc = mean_accuracy(nodes)
+#         self.assertGreaterEqual(acc[0], 0.95)
 
-    def test_breast(self):
-        X, Y = load_breast_dataset()
-        D = X.shape[1]
-        # set graph
-        nodes = complete_graph(X, Y, nb_nodes=1)
+#     def test_breast(self):
+#         X, Y = load_breast_dataset()
+#         D = X.shape[1]
+#         # set graph
+#         nodes = complete_graph(X, Y, nb_nodes=1)
 
-        NB_ITER = 100
-        results = centralized_FW(nodes, 2*D, nb_iter=NB_ITER, callbacks={"mean_accuracy":[mean_accuracy, []]})
+#         NB_ITER = 100
+#         results = centralized_FW(nodes, 2*D, nb_iter=NB_ITER, callbacks={"mean_accuracy":[mean_accuracy, []]})
 
-        self.assertGreaterEqual(results[9]["mean_accuracy"][0], results[0]["mean_accuracy"][0])
+#         self.assertGreaterEqual(results[9]["mean_accuracy"][0], results[0]["mean_accuracy"][0])
 
-        acc = mean_accuracy(nodes)
-        self.assertGreaterEqual(acc[0], 0.60)
+#         acc = mean_accuracy(nodes)
+#         self.assertGreaterEqual(acc[0], 0.60)
 
 
     # def test_xor(self):
@@ -93,6 +93,24 @@ class TestCentralized(unittest.TestCase):
 
     #     acc = mean_accuracy(nodes)
     #     self.assertEqual(acc[0], 1.)
+
+class TestLocal(unittest.TestCase):
+
+    def test_moons_scikit_stumps(self):
+
+        D = 8
+        NOISE_R = 0.05
+        random_state = 2018
+
+        V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=2, random_state=random_state)
+        _, X, Y, X_test, Y_test, _, _ = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
+
+        nodes, _, _ = synthetic_graph(X, Y, X_test, Y_test, V, theta_true)
+        
+        base_clfs, _ = get_scipy_selected_stumps(x=X, y=Y, d=D)
+
+        local_FW(nodes, base_clfs, nb_iter=1000, callbacks={})
+
 
 if __name__ == '__main__':
     unittest.main()

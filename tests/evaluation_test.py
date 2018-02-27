@@ -14,9 +14,10 @@ from utils import load_iris_dataset
 class TestFakeData(unittest.TestCase):
 
     def setUp(self):
-        self.nodes = complete_graph(np.ones((10, 5)), np.ones((10, 1)), nb_nodes=7)
+        self.nodes = complete_graph(np.ones((10, 5)), np.ones(10), nb_nodes=7)
+        base_clfs = get_double_basis(6, 6)
         for n in self.nodes:
-            n.init_matrices(6, get_double_basis)
+            n.init_matrices(base_clfs)
 
     def test_alpha_variance(self): 
         # test alphas all equal and null at initialization    
@@ -41,10 +42,12 @@ class TestFakeData(unittest.TestCase):
 
         node = centralize_data(self.nodes)
 
-        node.init_matrices(6, get_double_basis)
-
+        base_clfs = get_double_basis(6, 6)
         for n in self.nodes:
+            n.init_matrices(base_clfs)
             n.set_alpha(np.eye(6, 1))
+
+        node.init_matrices(base_clfs)
         node.set_alpha(np.eye(6, 1))
 
         loss1 = central_loss(self.nodes)
@@ -56,10 +59,12 @@ class TestFakeData(unittest.TestCase):
         self.assertEqual(mean_accuracy(self.nodes)[0], 0)
 
         node = centralize_data(self.nodes)
-        node.init_matrices(6, get_double_basis)
-
+        base_clfs = get_double_basis(6, 6)
         for n in self.nodes:
+            n.init_matrices(base_clfs)
             n.set_alpha(np.eye(6, 1))
+
+        node.init_matrices(base_clfs)
         node.set_alpha(np.eye(6, 1))
 
         acc1 = central_accuracy(self.nodes)[0]
@@ -76,10 +81,11 @@ class TestIris(unittest.TestCase):
 
     def test_accuracy(self): 
 
-        average_FW(self.nodes, self.D, nb_iter=10, callbacks={})
+        base_clfs = get_double_basis(self.D, self.D+1)
+        average_FW(self.nodes, base_clfs, nb_iter=10, callbacks={})
         acc1 = central_accuracy(self.nodes)[0]
 
-        centralized_FW(self.nodes, self.D, nb_iter=10, callbacks={})
+        centralized_FW(self.nodes, base_clfs, nb_iter=10, callbacks={})
         acc2 = central_accuracy(self.nodes)[0]
         acc3 = mean_accuracy(self.nodes)[0]
         self.assertAlmostEqual(acc2, acc3) 

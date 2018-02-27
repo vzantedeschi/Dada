@@ -97,11 +97,9 @@ def global_reg_frank_wolfe(nodes, gamma, alpha0, t=1, simplex=True):
 
 # --------------------------------------------------------------------- local learning
 
-def local_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, nb_iter=1, beta=1, simplex=True, callbacks=None):
+def local_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     results = []
-
-    base_clfs = clfs_getter(**clfs_g_args)
     
     # get margin matrices A
     for n in nodes:
@@ -127,16 +125,14 @@ def local_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, nb_iter=1, b
 
     return results
 
-def global_regularized_local_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, nb_iter=1, simplex=True, callbacks=None):
+def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, simplex=True, callbacks=None):
 
     results = []
-
-    base_clfs = clfs_getter(**clfs_g_args)
 
     # get margin matrices A
     for n in nodes:
         n.init_matrices(base_clfs)
-    alpha0 = np.zeros((clfs_g_args["n"], 1))
+    alpha0 = np.zeros((len(base_clfs), 1))
 
     results.append({})  
     for k, call in callbacks.items():
@@ -157,11 +153,9 @@ def global_regularized_local_FW(nodes, clfs_getter=get_double_basis, clfs_g_args
 
     return results
 
-def regularized_local_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
+def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
 
     results = []
-
-    base_clfs = clfs_getter(**clfs_g_args)
 
     # get margin matrices A
     for n in nodes:
@@ -188,14 +182,12 @@ def regularized_local_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, 
 
     return results
 
-def async_regularized_local_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
+def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
 
     results = []
     N = len(nodes)
 
     iterations = [0] * N
-
-    base_clfs = clfs_getter(**clfs_g_args)
 
     # get margin matrices A
     for n in nodes:
@@ -230,11 +222,9 @@ def async_regularized_local_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=
 
 # ---------------------------------------------------------------- global consensus FW
 
-def average_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, nb_iter=1, beta=1, simplex=True, weighted=False, callbacks=None):
+def average_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, weighted=False, callbacks=None):
 
     results = []
-
-    base_clfs = clfs_getter(**clfs_g_args)
 
     # get margin matrices A
     for n in nodes:
@@ -272,11 +262,9 @@ def average_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, nb_iter=1,
 
     return results
 
-def centralized_FW(nodes, clfs_getter=get_double_basis, clfs_g_args=None, nb_iter=1, beta=1, simplex=True, callbacks=None):
+def centralized_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     results = []
-
-    base_clfs = clfs_getter(**clfs_g_args)
 
     node = centralize_data(nodes)
     node.init_matrices(base_clfs)

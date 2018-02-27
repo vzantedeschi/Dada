@@ -13,7 +13,7 @@ from utils import generate_models, generate_moons
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 500
+NB_ITER = 50
 N = 100
 D = 20
 NOISE_R = 0.05
@@ -34,26 +34,22 @@ callbacks = {
 
 results = {}
 
-base_clfs_args = {
-    'n': 2*D,
-    'd': D+1,
-    'rnd_seed': random_state
-}
+base_clfs = get_rnd_linear_clfs(n=2*D, d=D+1, rnd_seed=random_state)
 
 nodes_copy = deepcopy(nodes)
-results["centralized"] = centralized_FW(nodes_copy, get_rnd_linear_clfs, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, callbacks=callbacks)
+results["centralized"] = centralized_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, callbacks=callbacks)
 
 nodes_regularized = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_regularized, get_rnd_linear_clfs, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
 # nodes_copy = deepcopy(nodes)
 # results["async_regularized"] = async_regularized_local_FW(nodes_copy, D, NB_ITER, mu=0.1, callbacks=callbacks)
 
 nodes_copy = deepcopy(nodes)
-results["local"] = local_FW(nodes_copy, get_rnd_linear_clfs, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, callbacks=callbacks)
+results["local"] = local_FW(nodes_copy, base_clfs, callbacks=callbacks)
 
 nodes_copy = deepcopy(nodes)
-results["global-reg"] = global_regularized_local_FW(nodes_copy, get_rnd_linear_clfs, clfs_g_args=base_clfs_args, nb_iter=NB_ITER, callbacks=callbacks)
+results["global-reg"] = global_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, callbacks=callbacks)
 
 # colearning results
 results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
@@ -140,5 +136,7 @@ for NODE in range(N):
     plt.scatter(X[:,0], X[:,1], c=Y, cmap=plt.cm.coolwarm, linewidths=10)
     plt.contourf(xx, yy, y, cmap=plt.cm.coolwarm, alpha=0.2)
     plt.scatter(X_test[:,0], X_test[:,1], c=Y_test, cmap=plt.cm.coolwarm)
+
+    break
 
 plt.show()

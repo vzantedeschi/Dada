@@ -48,7 +48,7 @@ class Node():
 
     def get_predictions(self, sample):
         """ get a prediction per weak classifier """
-        return np.hstack([c.predict(sample) for c in self.base_clfs])
+        return np.hstack([c.predict(sample)[:, None] for c in self.base_clfs])
 
     def set_neighbors(self, neighbors, sim=None):
         self.neighbors = neighbors
@@ -57,6 +57,7 @@ class Node():
     def set_margin_matrix(self):
         # set margin matrix A
         self.margin = self.get_predictions(self.sample) * self.labels[:, np.newaxis]
+        assert self.margin.shape == (len(self.sample), len(self.base_clfs)), self.margin.shape
 
     def set_alpha(self, alpha=None, alpha0=None):
 

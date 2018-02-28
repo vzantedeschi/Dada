@@ -10,7 +10,7 @@ Boosting algorithms using Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex=True):
+def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
     """ Modify nodes!
     """
  
@@ -23,36 +23,36 @@ def one_frank_wolfe_round(nodes, gamma, beta=1, t=1, mu=0, reg_sum=None, simplex
         else:
             r = None
 
-        frank_wolfe_on_one_node(n, i, gamma, duals, beta, t, mu, r, simplex)
+        frank_wolfe_on_one_node(n, i, gamma, duals, beta, t, mu, r)
 
     return duals
 
-def frank_wolfe_on_one_node(n, i, gamma, duals, beta=1, t=1, mu=0, reg_sum=None, simplex=True):
+def frank_wolfe_on_one_node(n, i, gamma, duals, beta=None, t=1, mu=0, reg_sum=None):
     """ Modify n and duals!
     """
 
     w = n.compute_weights(t)
-    g = n.sum_similarities * n.confidence * np.dot(n.margin.T, w) 
+    g = - n.sum_similarities * n.confidence * np.dot(n.margin.T, w) 
 
     if mu > 0:
-        g -= mu*(n.alpha - reg_sum) 
-    
-    if simplex:
+        g += mu*(n.alpha - reg_sum) 
+
+    if beta is None:
         # simplex constraint
-        j = np.argmax(g)
+        j = np.argmin(g)
         s_k = np.asarray([[1] if h==j else [0] for h in range(n.n)])
     else:
         # l1 constraint
-        j = np.argmin(g)
-        s_k = np.sign(g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n)])
+        j = np.argmax(abs(g))
+        s_k = np.sign(-g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n)])
 
     alpha_k = (1 - gamma) * n.alpha + gamma * s_k
     n.set_alpha(alpha_k)
 
     # update duality gap
-    duals[i] = (np.dot((s_k - alpha_k).squeeze(), g.squeeze()))
+    duals[i] = (np.dot((alpha_k - s_k).squeeze(), g.squeeze()))
 
-def global_reg_frank_wolfe(nodes, gamma, alpha0, t=1, simplex=True):
+def global_reg_frank_wolfe(nodes, gamma, alpha0, beta=None, t=1):
     """ Modify n and duals!
     """
     K = len(nodes)
@@ -62,21 +62,30 @@ def global_reg_frank_wolfe(nodes, gamma, alpha0, t=1, simplex=True):
     for i, n in enumerate(nodes):
 
         w = n.compute_weights(t)
-        gradients.append(n.sum_similarities * n.confidence * np.dot(n.margin.T, w))
+        gradients.append( - n.sum_similarities * n.confidence * np.dot(n.margin.T, w))
         alphas.append(n.alpha)
     
     gradients.append(np.sum(gradients, axis=0))
     g = np.vstack(gradients)
+    # print("g=", g, "\n")
 
-    # simplex constraint
-    j = np.argmax(g)
-    s = np.asarray([[1] if h==j else [0] for h in range(n.n*(K+1))])
+    if beta is None:
+        # simplex constraint
+        j = np.argmin(g)
+        s = np.asarray([[1] if h==j else [0] for h in range(n.n*(K+1))])
+    else:
+        # l1 constraint
+        j = np.argmax(abs(g))
+        s = np.sign(-g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n*(K+1))])
 
     # retreive vector to update
     i = j // n.n # node
     j = j % n.n # coordinate
 
-    s_i = np.asarray([[1] if h==j else [0] for h in range(n.n)])
+    if beta is None:
+        s_i = np.asarray([[1] if h==j else [0] for h in range(n.n)])
+    else:
+        s_i = np.sign(-g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n)])
 
     if i == K:
         alpha0 = (1 - gamma) * alpha0 + gamma * s_i
@@ -87,17 +96,17 @@ def global_reg_frank_wolfe(nodes, gamma, alpha0, t=1, simplex=True):
         alpha = (1 - gamma) * nodes[i].alpha + gamma * s_i
         nodes[i].set_alpha(alpha)
         alphas[i] = alpha        
-
+        # print(alpha)
     alphas.append(alpha0)
 
     # update duality gap
-    dual = (np.dot((s - np.vstack(alphas)).squeeze(), g.squeeze()))
+    dual = (np.dot((np.vstack(alphas) - s).squeeze(), g.squeeze()))
 
     return dual, alpha0
 
 # --------------------------------------------------------------------- local learning
 
-def local_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
+def local_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
 
     results = []
     
@@ -116,7 +125,7 @@ def local_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
         gamma = 2 / (2 + t)
 
-        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, simplex))
+        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta))
 
         results.append({})  
         for k, call in callbacks.items():
@@ -125,7 +134,7 @@ def local_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
 
     return results
 
-def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, simplex=True, callbacks=None):
+def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
 
     results = []
 
@@ -144,7 +153,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, simplex=True, callb
 
         gamma = 2 / (2 + t)
 
-        dual_gap, alpha0 = global_reg_frank_wolfe(nodes, gamma, alpha0, t=1, simplex=simplex)
+        dual_gap, alpha0 = global_reg_frank_wolfe(nodes, gamma, alpha0, beta=beta, t=1)
 
         results.append({})  
         for k, call in callbacks.items():
@@ -153,7 +162,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, simplex=True, callb
 
     return results
 
-def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
+def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None):
 
     results = []
 
@@ -173,7 +182,7 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=1, mu=1, simplex=True
 
         reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
 
-        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum, simplex))
+        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
 
         results.append({})  
         for k, call in callbacks.items():
@@ -182,7 +191,7 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=1, mu=1, simplex=True
 
     return results
 
-def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=1, mu=1, simplex=True, callbacks=None):
+def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None):
 
     results = []
     N = len(nodes)
@@ -211,7 +220,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=1, mu=1, simple
 
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
 
-        frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum, simplex)
+        frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
 
         results.append({})  
         for k, call in callbacks.items():
@@ -222,7 +231,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=1, mu=1, simple
 
 # ---------------------------------------------------------------- global consensus FW
 
-def average_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, weighted=False, callbacks=None):
+def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, callbacks=None):
 
     results = []
 
@@ -240,7 +249,7 @@ def average_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, weighted=False
 
         gamma = 2 / (2 + t)
 
-        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, simplex))
+        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta))
 
         # averaging between neighbors
         new_alphas = []
@@ -262,7 +271,7 @@ def average_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, weighted=False
 
     return results
 
-def centralized_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=None):
+def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
 
     results = []
 
@@ -281,7 +290,7 @@ def centralized_FW(nodes, base_clfs, nb_iter=1, beta=1, simplex=True, callbacks=
 
         gamma = 2 / (2 + t)
 
-        dual_gap = sum(one_frank_wolfe_round(list_node, gamma, beta, simplex))
+        dual_gap = sum(one_frank_wolfe_round(list_node, gamma, beta))
 
         results.append({})  
         for k, call in callbacks.items():

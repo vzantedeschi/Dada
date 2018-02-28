@@ -72,14 +72,13 @@ def get_double_basis(n, d, *args):
 def get_stumps(n, d, min_v, max_v):
 
     # get nb_clfs/dimensions regular thresholds
-    interval = 2 * (max_v - min_v) * d / (n + 1)
-    thresholds = [min_v + (i+1)*interval for i in range(n//(2*d) + 1)]
+    interval = (max_v - min_v) * d / (n + 1)
+    thresholds = [min_v + (i+1)*interval for i in range(n//d + 1)]
 
     base_clfs = []
 
     for j in range(d): 
         base_clfs += [StumpClassifier(j, t, 1) for t in thresholds]
-        base_clfs += [StumpClassifier(j, t, -1) for t in thresholds]
 
     return random.sample(base_clfs, n)
 

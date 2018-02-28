@@ -20,8 +20,8 @@ class Node():
 
     def predict(self, sample):
         if self.clf is None:
-            return np.sign(np.dot(self.get_predictions(sample), self.alpha))
-        return self.clf.predict(sample)
+            return np.sign(np.dot(self.get_predictions(sample), self.alpha + self.alpha0))
+        return self.clf.predict(sample) 
 
     def init_matrices(self, base_clfs):
         # set weak classifiers
@@ -35,7 +35,7 @@ class Node():
         self.set_alpha(alpha, alpha0)
 
     def compute_weights(self, temp=1, distr=True):
-                    
+           
         w = np.exp(-np.dot(self.margin, self.alpha + self.alpha0) / temp)
 
         if distr:

@@ -10,7 +10,7 @@ from optimization import regularized_local_FW
 from utils import generate_models, generate_moons, get_split_per_list, get_min_max
 
 # set graph of nodes with local personalized data
-NB_ITER = 1000
+NB_ITER = 100
 N = 100
 D = 20
 B = 100
@@ -52,6 +52,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
         for beta in BETA_LIST:
 
+            print(mu, beta)
             nodes_copy = deepcopy(nodes)
             r = regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, callbacks=callbacks)
 

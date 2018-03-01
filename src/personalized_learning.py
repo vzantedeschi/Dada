@@ -1,8 +1,6 @@
 from copy import deepcopy
 import numpy as np
 
-from sklearn.utils import shuffle
-
 from classification import get_double_basis
 from evaluation import central_accuracy, central_loss, accuracies
 from network import line_network, synthetic_graph, true_theta_graph
@@ -13,12 +11,13 @@ from utils import generate_models, generate_samples
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 50
+NB_ITER = 1000
 N = 100
 D = 20
 NOISE_R = 0.05
 random_state = 2017
-BETA = 10 # if None, simplex constraint
+BETA = 1 # if None, simplex constraint
+MU = 1
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, X_test, Y_test, _, _ = generate_samples(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
@@ -42,11 +41,11 @@ results["centralized"] = centralized_FW(nodes_centralized, base_clfs, nb_iter=NB
 hist_accuracies["centralized"] = accuracies(nodes_centralized)
 
 nodes_regularized = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=1, callbacks=callbacks)
+results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
 hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
 nodes_copy = deepcopy(nodes)
-results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=1, callbacks=callbacks)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
 hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 nodes_copy = deepcopy(nodes)

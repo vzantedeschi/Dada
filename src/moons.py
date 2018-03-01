@@ -13,14 +13,14 @@ from utils import generate_models, generate_moons, get_min_max
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 100
+NB_ITER = 2000
 N = 20
 D = 20
 B = 100
 NOISE_R = 0.05
 random_state = 2017
-MU = 0.00000001
-BETA = 1
+MU = 0.01
+BETA = 10
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, X_test, Y_test, _, _ = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
@@ -42,17 +42,17 @@ base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 # nodes_copy = deepcopy(nodes)
 # results["centralized"] = centralized_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-# nodes_regularized = deepcopy(nodes)
-# results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
-
-# nodes_copy = deepcopy(nodes)
-# results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
-
-# local_nodes = deepcopy(nodes)
-# results["local"] = local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+nodes_regularized = deepcopy(nodes)
+results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
 nodes_copy = deepcopy(nodes)
-results["global-reg"] = global_regularized_local_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+
+local_nodes = deepcopy(nodes)
+results["local"] = local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+
+# nodes_copy = deepcopy(nodes)
+# results["global-reg"] = global_regularized_local_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
 # colearning results
 results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)

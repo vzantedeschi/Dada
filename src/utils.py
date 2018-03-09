@@ -1,5 +1,6 @@
 from itertools import combinations
 import numpy as np
+import numpy.linalg as LA
 import math
 
 from scipy.sparse import csr_matrix
@@ -17,6 +18,18 @@ def get_min_max(sample):
         vmax = max(vmax, np.max(l))
 
     return vmin, vmax
+
+def square_root_matrix(matrix):
+    """ square root of a symmetric PSD matrix.
+    Due to numerical errors, the computed eigen values can be complex or negative. Here all imaginary parts are set to 0. """
+
+    eig_values, eig_vectors = LA.eig(matrix)
+    eig_values, eig_vectors = np.real(eig_values).clip(min=0), np.real(eig_vectors)
+
+    sqrt_diag = np.diag(np.sqrt(eig_values))
+    sqrt_matrix = np.dot(np.dot(eig_vectors, sqrt_diag), LA.pinv(eig_vectors))
+
+    return sqrt_matrix
 
 def rotate(v1, v2):
 

@@ -13,7 +13,7 @@ from utils import generate_models, generate_moons, get_min_max
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 2000
+NB_ITER = 500
 N = 20
 D = 20
 B = 200
@@ -45,11 +45,11 @@ results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta
 local_nodes = deepcopy(nodes)
 results["local"] = local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-gd_nodes = deepcopy(nodes)
-results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
-
 # colearning results
 results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
+
+gd_nodes = deepcopy(nodes)
+results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
 # get best accuracy on train and test samples
 best_train_acc, best_test_acc = best_accuracy(nodes)
@@ -159,26 +159,6 @@ plt.legend()
 #     grid_set = np.c_[xx.ravel(), yy.ravel()]
 #     grid_set = np.hstack((grid_set, np.zeros((len(grid_set), D - 1))))
 #     y = nodes_regularized[NODE].predict(grid_set).reshape(xx.shape)
-
-#     plt.scatter(X[:,0], X[:,1], c=Y, cmap=plt.cm.coolwarm, linewidths=10)
-#     plt.scatter(X_test[:,0], X_test[:,1], c=Y_test, cmap=plt.cm.coolwarm)
-
-#     plt.contourf(xx, yy, y, cmap=plt.cm.coolwarm, alpha=0.2)
-
-#     plt.subplot(224)
-#     plt.title("gd regularized FW")
-
-#     # training data
-#     X = gd_nodes[NODE].sample
-#     Y = gd_nodes[NODE].labels
-
-#     X_test = gd_nodes[NODE].test_sample
-#     Y_test = gd_nodes[NODE].test_labels
-
-#     # expand dimensions
-#     grid_set = np.c_[xx.ravel(), yy.ravel()]
-#     grid_set = np.hstack((grid_set, np.zeros((len(grid_set), D - 1))))
-#     y = gd_nodes[NODE].predict(grid_set).reshape(xx.shape)
 
 #     plt.scatter(X[:,0], X[:,1], c=Y, cmap=plt.cm.coolwarm, linewidths=10)
 #     plt.scatter(X_test[:,0], X_test[:,1], c=Y_test, cmap=plt.cm.coolwarm)

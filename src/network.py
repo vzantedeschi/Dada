@@ -89,7 +89,7 @@ def set_edges(nodes, adj_matrix, max_nb_instances=1):
 
         neis, sims = [], []
         for j, a in enumerate(adj_matrix[i]):
-            
+
             if a != 0:
                 neis.append(nodes[j])
                 sims.append(adj_matrix[i][j])

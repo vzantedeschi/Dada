@@ -1,6 +1,7 @@
 from math import log
 import numpy as np
 
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 
 def alpha_variance(nodes, *args):
@@ -71,3 +72,32 @@ def central_accuracy(nodes, *args):
         test_acc = None
 
     return train_acc, test_acc
+
+# -------------------------------------------------------------------------------  BASELINE
+
+def best_accuracy(nodes):
+
+    best_clf = GradientBoostingClassifier()
+
+    predictions, labels = [], []
+
+    for n in nodes:
+        best_clf.fit(n.sample, n.labels)
+        predictions.append(best_clf.predict(n.sample))
+        labels.append(n.labels)
+
+    best_train_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
+
+    try:
+        predictions, labels = [], []
+        for n in nodes:
+            best_clf.fit(n.test_sample, n.test_labels)
+            predictions.append(best_clf.predict(n.test_sample))
+            labels.append(n.test_labels)
+        
+        best_test_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
+
+    except:
+        best_test_acc = None
+
+    return best_train_acc, best_test_acc

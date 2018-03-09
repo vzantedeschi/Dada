@@ -1,3 +1,4 @@
+import cvxpy as cvx
 import numpy as np
 from random import choice
 
@@ -19,7 +20,23 @@ def graph_discovery(nodes):
 
     laplacian /= np.trace(laplacian)
 
-    return np.eye(len(nodes)) - laplacian
+    return (np.eye(len(nodes))-laplacian).clip(min=0)
+
+def graph_discovery_l1(nodes):
+
+    N = len(nodes)
+
+    alpha = np.hstack([n.alpha for n in nodes])
+
+    x = cvx.Variable(N, N)
+
+    objective = cvx.Minimize(cvx.trace(alpha * (np.eye(N) - x) * alpha.T))
+    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.norm(x, 1) <= N, cvx.sum_entries(x, axis=1) == np.ones(N)]
+
+    prob = cvx.Problem(objective, constraints)
+    result = prob.solve()
+
+    return np.asarray(x.value).clip(min=0)
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
     """ Modify nodes!
@@ -242,6 +259,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
 def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, callbacks=None):
 
+    N = len(nodes)
     results = []
 
     # get margin matrices A
@@ -271,10 +289,11 @@ def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, cal
 
         resettable_t += 1
 
-        if t % pace_gd == 0 and dual_gap < 10:
+        if dual_gap < N and resettable_t % pace_gd == 0:
             print(t)
             # graph discovery
-            adj_matrix = graph_discovery(nodes)
+            adj_matrix = graph_discovery_l1(nodes)
+            print(adj_matrix)
             set_edges(nodes, adj_matrix)
 
             # reset gamma

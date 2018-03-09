@@ -2,13 +2,24 @@ import numpy as np
 from random import choice
 
 from classification import get_double_basis
-from network import centralize_data
+from network import centralize_data, set_edges
+from utils import square_root_matrix
 
 """
 Boosting algorithms using Frank Wolfe optimization
 """
 
 # ----------------------------------------------------------- specific utils
+
+def graph_discovery(nodes):
+
+    alpha = np.hstack([n.alpha for n in nodes])
+
+    laplacian = square_root_matrix(np.dot(alpha.T, alpha))
+
+    laplacian /= np.trace(laplacian)
+
+    return np.eye(len(nodes)) - laplacian
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
     """ Modify nodes!
@@ -229,6 +240,47 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     return results
 
+def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, callbacks=None):
+
+    results = []
+
+    # get margin matrices A
+    for n in nodes:
+        n.init_matrices(base_clfs)
+    set_edges(nodes, np.eye(len(nodes)))
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](nodes, *call[1])
+    results[0]["duality-gap"] = 0
+
+    resettable_t = 0
+    # frank-wolfe
+    for t in range(nb_iter):
+
+        gamma = 2 / (2 + resettable_t)
+
+        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
+
+        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
+
+        results.append({})  
+        for k, call in callbacks.items():
+            results[t+1][k] = call[0](nodes, *call[1])
+        results[t+1]["duality-gap"] = dual_gap
+
+        resettable_t += 1
+
+        if t % pace_gd == 0 and dual_gap < 10:
+            print(t)
+            # graph discovery
+            adj_matrix = graph_discovery(nodes)
+            set_edges(nodes, adj_matrix)
+
+            # reset gamma
+            resettable_t = 0
+
+    return results
 # ---------------------------------------------------------------- global consensus FW
 
 def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, callbacks=None):

@@ -54,6 +54,18 @@ class Node():
         self.neighbors = neighbors
         self.sim = sim
 
+    def reset_neighbors(self, nodes, adj_matrix):
+
+        self.neighbors = []
+        self.sim = []
+
+        for j, a in enumerate(adj_matrix[self.id]):
+            if a != 0:
+                self.neignbors.append(nodes[j])
+                self.sim.append(similarities[self.id][j])
+
+        n.sum_similarities = sum(self.sim)
+
     def set_margin_matrix(self):
         # set margin matrix A
         self.margin = self.get_predictions(self.sample) * self.labels[:, np.newaxis]
@@ -69,6 +81,23 @@ class Node():
     def set_test_set(self, x, y):
         self.test_sample = x
         self.test_labels = y
+
+
+def set_edges(nodes, adj_matrix, max_nb_instances=1):
+
+    for i, n in enumerate(nodes):
+
+        neis, sims = [], []
+        for j, a in enumerate(adj_matrix[i]):
+            
+            if a != 0:
+                neis.append(nodes[j])
+                sims.append(adj_matrix[i][j])
+
+        n.set_neighbors(neis, sims)
+        n.confidence /= max_nb_instances 
+        n.sum_similarities = sum(sims)
+
 
 def centralize_data(nodes):
 
@@ -155,7 +184,6 @@ def random_graph(x, y, nb_nodes=3, prob_edge=1, cluster_data=False, rnd_state=No
     return nodes
 
 def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
-    """ edge weight = sim*nb_instances """
 
     adj_matrix, similarities = compute_adjacencies(theta_true, nb_nodes)
 
@@ -166,6 +194,7 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     max_nb_instances = 1
     for i in range(nb_nodes):
 
+        # add offset
         M, _ = x[i].shape
         x_copy = np.c_[x[i], np.ones(M)]
         M, _ = x_test[i].shape

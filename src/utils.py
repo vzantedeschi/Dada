@@ -1,7 +1,9 @@
+import csv
 from itertools import combinations
 import numpy as np
 import numpy.linalg as LA
 import math
+import os
 
 from scipy.sparse import csr_matrix
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine, make_moons
@@ -9,6 +11,33 @@ from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import normalize, scale, MinMaxScaler
 
+# ----------------------------------------------------------------------------- IO FUNCTIONS
+
+def make_directory(dir_path):
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+
+def csv_to_dict(filename):
+
+    with open(filename, 'r') as csv_file:
+        reader = csv.reader(csv_file)
+        next(reader, None)
+        my_dict = {row[0]: eval(row[1]) for row in reader}
+
+    return my_dict
+
+def dict_to_csv(my_dict, header, filename):
+
+    make_directory(os.path.dirname(filename))
+
+    with open(filename, 'w') as csv_file:
+        writer = csv.writer(csv_file)
+        
+        writer.writerow(header)
+        for key, value in my_dict.items():
+            writer.writerow([key, value])
+
+# --------------------------------------------------------------------- ARRAY ROUTINES
 def get_min_max(sample):
     
     vmin, vmax = float("inf"), -float("inf")

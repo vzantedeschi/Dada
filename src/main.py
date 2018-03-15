@@ -3,15 +3,17 @@ import numpy as np
 
 from sklearn.metrics import accuracy_score
 
-from classification import RandomClassifier
-from evaluation import clf_variance, central_loss, central_accuracy
+from classification import RandomClassifier, get_basis
+from evaluation import central_loss, central_accuracy
 from network import random_graph, complete_graph
-from optimization import average_FW, local_FW, neighbor_FW, centralized_FW, regularized_local_FW
+from optimization import average_FW, local_FW, centralized_FW, regularized_local_FW
 from related_works import lafond_FW
 from utils import load_dense_dataset, load_breast_dataset, generate_models, generate_samples
 
-NB_ITER = 10
+NB_ITER = 100
 N = 30
+BETA = 1
+MU = 1
 
 TRAIN_FILE = "datasets/ijcnn1.train"
 TEST_FILE = "datasets/ijcnn1.test"
@@ -34,26 +36,27 @@ for n in nodes:
 # set callbacks for optimization analysis
 callbacks = {
     'accuracy': [central_accuracy, []],
-    'loss': [central_loss, []],
-    'clf-variance': [clf_variance, []]
+    'loss': [central_loss, []]
 }
 
 methods = {
     "centralized": centralized_FW, 
+    "lafond": lafond_FW,
     "local": local_FW,
-    "average": average_FW,
-    "regularized": regularized_local_FW
+    "average": average_FW
 }
+
+base_clfs = get_basis(n=D, d=D+1)
 
 results = {}
 for k, m in methods.items():
 
     nodes_copy = deepcopy(nodes)
-    results[k] = m(nodes_copy, D, NB_ITER, callbacks=callbacks)
+    results[k] = m(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
 
-# lafond method
+# regularized method
 nodes_copy = deepcopy(nodes)
-results["lafond"] = lafond_FW(nodes, D, NB_ITER, callbacks=callbacks)
+results["regularized"] = regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
 
 random_clf = RandomClassifier()
 train_acc_rnd = random_clf.score(train_x, train_y)
@@ -87,15 +90,6 @@ plt.ylabel('train loss')
 
 for k, r_list in results.items():
     plt.plot(range(x_len), [r['loss'] for r in r_list], label='{}'.format(k))
-
-plt.legend()
-
-plt.figure(4)
-plt.xlabel('nb iterations')
-plt.ylabel('clf variace')
-
-for k, r_list in results.items():
-    plt.plot(range(x_len), [r['clf-variance'] for r in r_list], label='{}'.format(k))
 
 plt.legend()
 

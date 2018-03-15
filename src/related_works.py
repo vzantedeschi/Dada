@@ -1,4 +1,3 @@
-from copy import deepcopy
 from math import log
 
 import numpy as np
@@ -34,19 +33,17 @@ def gac_routine(vectors, nodes, nb_iter):
 
         for n in nodes:
 
-            new_vectors.append(np.sum([s*vectors[j] for j, (_, s) in enumerate(zip(n.neighbors, n.sim))], axis=0))
-
-        vectors = deepcopy(new_vectors)
+            new_vectors.append(np.sum([s*vectors[j] for j, s in enumerate(n.sim / n.sum_similarities)], axis=0))
 
     return new_vectors
 
-def lafond_FW(nodes, nb_base_clfs, nb_iter=1, beta=1, c1=5, t=1, simplex=True, callbacks=None):
+def lafond_FW(nodes, base_clfs, nb_iter=1, beta=1, c1=5, t=1, simplex=True, callbacks=None):
 
     results = []
     
     # get margin matrices A
     for n in nodes:
-        n.init_matrices(nb_base_clfs)
+        n.init_matrices(base_clfs)
 
     results.append({})  
     for k, call in callbacks.items():

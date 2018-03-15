@@ -42,11 +42,11 @@ base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 nodes_regularized = deepcopy(nodes)
 results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
-local_nodes = deepcopy(nodes)
-results["local"] = local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+# local_nodes = deepcopy(nodes)
+# results["local"] = local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-# colearning results
-results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
+# # colearning results
+# results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
 
 gd_nodes = deepcopy(nodes)
 results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)

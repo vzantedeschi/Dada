@@ -58,7 +58,7 @@ hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
 # lafond method
 nodes_copy = deepcopy(nodes)
-results["lafond"] = lafond_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, callbacks=callbacks)
+results["lafond"] = lafond_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
 # colearning results
 results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)

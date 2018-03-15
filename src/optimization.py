@@ -22,7 +22,7 @@ def graph_discovery(nodes):
 
     return (np.eye(len(nodes))-laplacian).clip(min=0)
 
-def graph_discovery_l1(nodes):
+def graph_discovery_sparse(nodes):
 
     N = len(nodes)
 
@@ -30,13 +30,16 @@ def graph_discovery_l1(nodes):
 
     x = cvx.Variable(N, N)
 
+    # set node degrees to 1
     objective = cvx.Minimize(cvx.trace(alpha * (np.eye(N) - x) * alpha.T))
-    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.norm(x, 1) <= N, cvx.sum_entries(x, axis=1) == np.ones(N)]
+    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.norm(x, 1) <= N, cvx.sum_entries(x, axis=1) == np.ones(N), cvx.sum_entries(x, axis=0) == np.ones((1,N))]
 
     prob = cvx.Problem(objective, constraints)
     result = prob.solve()
 
-    return np.asarray(x.value).clip(min=0)
+    res = np.asarray(x.value)
+
+    return res.clip(min=0)
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
     """ Modify nodes!
@@ -290,14 +293,14 @@ def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, cal
         resettable_t += 1
 
         if dual_gap < N and resettable_t % pace_gd == 0:
-            print(t)
+
             # graph discovery
-            adj_matrix = graph_discovery_l1(nodes)
-            print(adj_matrix)
+            adj_matrix = graph_discovery_sparse(nodes)
             set_edges(nodes, adj_matrix)
 
             # reset gamma
             resettable_t = 0
+            results[t+1]["adj-matrix"] = adj_matrix
 
     return results
 # ---------------------------------------------------------------- global consensus FW

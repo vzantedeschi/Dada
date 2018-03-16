@@ -57,7 +57,7 @@ def central_accuracy(nodes, *args):
     for n in nodes:
         predictions.append(n.predict(n.sample))
         labels.append(n.labels)
-    
+
     train_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
 
     try:
@@ -91,7 +91,7 @@ def best_accuracy(nodes):
     try:
         predictions, labels = [], []
         for n in nodes:
-            best_clf.fit(n.test_sample, n.test_labels)
+            best_clf.fit(n.sample, n.labels)
             predictions.append(best_clf.predict(n.test_sample))
             labels.append(n.test_labels)
         

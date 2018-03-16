@@ -35,7 +35,7 @@ class Node():
         self.set_alpha(alpha, alpha0)
 
     def compute_weights(self, temp=1, distr=True):
-           
+
         w = np.exp(-np.dot(self.margin, self.alpha + self.alpha0) / temp)
 
         if distr:
@@ -219,6 +219,41 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
         n.sum_similarities = sum(sims)
 
     return nodes, adj_matrix, similarities
+
+def graph(x, y, x_test, y_test, nb_nodes, adj_matrix, similarities):
+
+    nodes = list()
+    nei_ids = list()
+    nei_sim = list()
+
+    max_nb_instances = 1
+    for i in range(nb_nodes):
+
+        # add offset
+        M, _ = x[i].shape
+        x_copy = np.c_[x[i], np.ones(M)]
+        M, _ = x_test[i].shape
+        x_test_copy = np.c_[x_test[i], np.ones(M)]
+
+        n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
+        nb_instances = len(x[i])
+        n.confidence = nb_instances
+        max_nb_instances = max(max_nb_instances, nb_instances)
+
+        nei_ids.append([])
+        nei_sim.append([])
+        for j, a in enumerate(adj_matrix[i]):
+            if a != 0:
+                nei_ids[i].append(j)
+                nei_sim[i].append(similarities[i][j])
+        nodes.append(n)
+
+    for ids, sims, n in zip(nei_ids, nei_sim, nodes):
+        n.set_neighbors([nodes[i] for i in ids], sims)
+        n.confidence /= max_nb_instances 
+        n.sum_similarities = sum(sims)
+
+    return nodes
 
 def true_theta_graph(nodes, theta_true):
 

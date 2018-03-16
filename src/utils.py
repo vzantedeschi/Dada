@@ -71,6 +71,56 @@ def rotate(v1, v2):
 
 # ---------------------------------------------------------------------- LOAD DATASETS
 
+DATASET_PATH = os.path.join("datasets")
+
+def load_mobiact():
+
+    import pandas as pd
+    from sklearn.metrics.pairwise import pairwise_distances
+
+    USER_FILE = os.path.join(DATASET_PATH, "Mobi_Users.csv")
+    SETS_DIR = os.path.join(DATASET_PATH, "Mobi_Generated") 
+    NB_USERS = 67
+
+    train_x, train_y, test_x, test_y = [], [], [] , []
+    users_not_found = []
+
+    for user_id in range(NB_USERS):
+        train_f = os.path.join(SETS_DIR, "user{}_train.csv".format(user_id+1))
+        test_f = os.path.join(SETS_DIR, "user{}_test.csv".format(user_id+1))
+
+        if os.path.isfile(train_f):
+            train = pd.read_csv(train_f).as_matrix()[2:, 1:]
+            test = pd.read_csv(test_f).as_matrix()[2:, 1:]
+
+            train_labels = train[:, -1]
+            train_labels[train_labels != "FOL"] = -1
+            train_labels[train_labels == "FOL"] = 1
+
+            test_labels = test[:, -1]
+            test_labels[test_labels != "FOL"] = -1
+            test_labels[test_labels == "FOL"] = 1
+
+            train_x.append(np.array(train[:, :-1], dtype=np.float32))
+            train_y.append(np.array(train_labels, dtype=np.int))
+            test_x.append(np.array(test[:, :-1], dtype=np.float32))
+            test_y.append(np.array(test_labels, dtype=np.int))
+
+        else:
+            users_not_found.append(user_id)
+
+    users = pd.read_csv(USER_FILE, usecols=(3, 4, 5, 6))
+    users.replace(('M', 'F', '-'), (1, 0, 0.5), inplace=True)
+    users.drop(users.index[users_not_found], inplace=True)
+
+    min_max_scaler = MinMaxScaler()
+    scaled_users = min_max_scaler.fit_transform(users[['Age', 'Height', 'Weight', 'Gender']])
+    user_distances = pairwise_distances(scaled_users)
+
+    adjacency = get_adj_matrix(user_distances)
+
+    return train_x, train_y, test_x, test_y, adjacency, user_distances, len(user_distances)
+
 def load_wine_dataset():
     
     X, Y = load_wine(return_X_y=True)
@@ -278,6 +328,15 @@ def sim_map(arr, sigma):
     (length of arc between two points on the unit circle)"""
     return np.exp(-((1-arr)**2 + (1-arr**2)) / (2*sigma))
 
+def get_adj_matrix(similarities):
+
+    thresholds = similarities.max() * np.sqrt(10) ** (- np.arange(1, 100))
+    for thresh in thresholds:
+        adjacency = similarities > thresh
+        if np.abs(np.linalg.eigvalsh(np.diag(adjacency.sum(axis=1)) - adjacency)[1]) > 1e-3:
+            break
+    return adjacency
+
 def compute_adjacencies(theta_true, n, sigma=0.1):
     """Compute graph matrices according to true models of agents"""
     
@@ -289,10 +348,6 @@ def compute_adjacencies(theta_true, n, sigma=0.1):
     similarities = sim_map(similarities, sigma)
     similarities[np.diag_indices(n)] = 0
     
-    thresholds = similarities.max() * np.sqrt(10) ** (- np.arange(1, 100))
-    for thresh in thresholds:
-        adjacency = similarities > thresh
-        if np.abs(np.linalg.eigvalsh(np.diag(adjacency.sum(axis=1)) - adjacency)[1]) > 1e-3:
-            break
+    adjacency = get_adj_matrix(similarities)
 
     return adjacency, similarities

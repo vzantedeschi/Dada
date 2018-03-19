@@ -73,16 +73,16 @@ def rotate(v1, v2):
 
 DATASET_PATH = os.path.join("datasets")
 
-def load_mobiact():
+def load_mobiact(path=DATASET_PATH):
 
     import pandas as pd
     from sklearn.metrics.pairwise import pairwise_distances
 
-    USER_FILE = os.path.join(DATASET_PATH, "Mobi_Users.csv")
-    SETS_DIR = os.path.join(DATASET_PATH, "Mobi_Generated") 
+    USER_FILE = os.path.join(path, "Mobi_Users.csv")
+    SETS_DIR = os.path.join(path, "Mobi_Generated") 
     NB_USERS = 67
 
-    train_x, train_y, test_x, test_y = [], [], [] , []
+    train_x, train_y, test_x, test_y = [], [], [], []
     users_not_found = []
 
     for user_id in range(NB_USERS):

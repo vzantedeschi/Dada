@@ -7,6 +7,8 @@ import numpy as np
 def minimize_gradients(gradients, nodes, gamma, beta=None):
 
     new_alphas = []
+    duals = []
+
     for n, g in zip(nodes, gradients):
 
         if beta is None:
@@ -18,9 +20,11 @@ def minimize_gradients(gradients, nodes, gamma, beta=None):
             j = np.argmax(abs(g))
             s_k = np.sign(-g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n)])
 
-        new_alphas.append((1 - gamma) * n.alpha + gamma * s_k)
+        alpha_k = (1 - gamma) * n.alpha + gamma * s_k
+        new_alphas.append(alpha_k)
+        duals.append(np.dot((alpha_k - s_k).squeeze(), g.squeeze()))
 
-    return new_alphas
+    return new_alphas, duals
 
 def gac_routine(vectors, nodes, nb_iter):
 
@@ -48,6 +52,7 @@ def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None)
     results.append({})  
     for k, call in callbacks.items():
         results[0][k] = call[0](nodes, *call[1])
+    results[0]["duality-gap"] = 0
 
     # frank-wolfe
     for i in range(nb_iter):
@@ -68,7 +73,7 @@ def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None)
 
         gradients = gac_routine(gradients, nodes, nb_iter_gac)
 
-        alphas = minimize_gradients(gradients, nodes, gamma, beta)
+        alphas, duals = minimize_gradients(gradients, nodes, gamma, beta)
 
         alphas = gac_routine(alphas, nodes, nb_iter_gac)
 
@@ -78,6 +83,7 @@ def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None)
         results.append({})  
         for k, call in callbacks.items():
             results[i+1][k] = call[0](nodes, *call[1])
+        results[i+1]["duality-gap"] = sum(duals)
 
     return results
 

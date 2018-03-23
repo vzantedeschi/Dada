@@ -64,7 +64,9 @@ def rotate(v1, v2):
 
     #rotate wrt s
     c = np.dot(v2, np.asarray([1,0])) / np.linalg.norm(v2)
-    s = math.sin(math.acos(c))
+
+    s = math.sin(math.acos(c)*np.sign(v2[1]))
+
     rotation = np.asarray([[c, -s], [s, c]])
 
     return np.dot(v1, rotation)

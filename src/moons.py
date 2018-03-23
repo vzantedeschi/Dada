@@ -7,19 +7,19 @@ from classification import get_stumps
 from evaluation import central_accuracy, central_loss, best_accuracy
 from network import line_network, synthetic_graph, true_theta_graph
 from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW, gd_reg_local_FW
-from related_works import colearning
+from related_works import colearning, lafond_FW
 from utils import generate_models, generate_moons, get_min_max
 
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 500
+NB_ITER = 1000
 N = 20
 D = 20
 B = 200
 NOISE_R = 0.05
 random_state = 2017
-MU = 0.01
+MU = 0.05
 BETA = 10
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
@@ -45,11 +45,17 @@ results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta
 # local_nodes = deepcopy(nodes)
 # results["local"] = local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-# # colearning results
-# results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
+# centralized_nodes = deepcopy(nodes)
+# results["centralized"] = centralized_FW(centralized_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-gd_nodes = deepcopy(nodes)
-results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+# colearning results
+results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
+
+# gd_nodes = deepcopy(nodes)
+# results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+
+lafond_nodes = deepcopy(nodes)
+results["lafond"] = lafond_FW(lafond_nodes, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
 
 # get best accuracy on train and test samples
 best_train_acc, best_test_acc = best_accuracy(nodes)

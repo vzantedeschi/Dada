@@ -24,7 +24,7 @@ def graph_discovery(nodes):
 
     return (np.eye(len(nodes))-laplacian).clip(min=0)
 
-def graph_discovery_sparse(nodes):
+def graph_discovery_sparse(nodes, *args):
 
     N = len(nodes)
 
@@ -61,7 +61,19 @@ def graph_discovery_knn(nodes, k=10):
     graph_sim = np.asarray(x.value).clip(min=0)
     nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(graph_sim)
 
-    return graph_sim[nbrs.kneighbors_graph(graph_sim).toarray()]
+    sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
+
+    # make it symmetric
+    sparsity_mask = np.logical_and(sparsity_mask, sparsity_mask.T)
+
+    assert np.allclose(sparsity_mask, sparsity_mask.T, atol=1e-8)
+
+    return np.multiply(graph_sim, sparsity_mask)
+
+gd_func_dict = {
+    "laplacian": graph_discovery_sparse,
+    "knn": graph_discovery_knn,
+}
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
     """ Modify nodes!
@@ -282,10 +294,14 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, gd_method="laplacian", pace_gd=1, nb_iter=1, beta=None, mu=1, reset_step=True, callbacks=None):
+def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=True, callbacks=None):
 
     N = len(nodes)
     results = []
+
+    gd_function = gd_func_dict[gd_method["name"]]
+    gd_args = gd_method["args"]
+    gd_pace = gd_method["pace_gd"]
 
     # get margin matrices A
     for n in nodes:
@@ -314,10 +330,10 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method="laplacian", pace_gd=1, nb_iter=
 
         resettable_t += 1
 
-        if dual_gap < N and resettable_t % pace_gd == 0:
+        if resettable_t % gd_pace == 0 and dual_gap < N:
 
             # graph discovery
-            adj_matrix = graph_discovery_sparse(nodes)
+            adj_matrix = gd_function(nodes, gd_args)
             set_edges(nodes, adj_matrix)
 
             if reset_step:

@@ -43,7 +43,7 @@ def graph_discovery_sparse(nodes):
 
     return res.clip(min=0)
 
-def graph_discovery_knn(nodes, nb_neigh=10):
+def graph_discovery_knn(nodes, k=10):
 
     N = len(nodes)
 
@@ -59,9 +59,9 @@ def graph_discovery_knn(nodes, nb_neigh=10):
     result = prob.solve()   
 
     graph_sim = np.asarray(x.value).clip(min=0)
-    nbrs = NearestNeighbors(n_neighbors=2, algorithm='auto').fit(graph_sim)
+    nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(graph_sim)
 
-    return nbrs.kneighbors_graph(graph_sim).toarray()
+    return graph_sim[nbrs.kneighbors_graph(graph_sim).toarray()]
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
     """ Modify nodes!
@@ -282,7 +282,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, reset_step=True, callbacks=None):
+def gd_reg_local_FW(nodes, base_clfs, gd_method="laplacian", pace_gd=1, nb_iter=1, beta=None, mu=1, reset_step=True, callbacks=None):
 
     N = len(nodes)
     results = []
@@ -314,7 +314,7 @@ def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, res
 
         resettable_t += 1
 
-        if resettable_t % pace_gd == 0:
+        if dual_gap < N and resettable_t % pace_gd == 0:
 
             # graph discovery
             adj_matrix = graph_discovery_sparse(nodes)

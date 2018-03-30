@@ -52,10 +52,10 @@ results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta
 # results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
 
 gd_nodes = deepcopy(nodes)
-results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=30, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
 gd_nodes = deepcopy(nodes)
-results["gd-regularized-noreset"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
+results["gd-regularized-noreset"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=30, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
 
 # lafond_nodes = deepcopy(nodes)
 # results["lafond"] = lafond_FW(lafond_nodes, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)

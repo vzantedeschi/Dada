@@ -2,6 +2,8 @@ import cvxpy as cvx
 import numpy as np
 from random import choice
 
+from sklearn.neighbors import NearestNeighbors
+
 from classification import get_double_basis
 from network import centralize_data, set_edges
 from utils import square_root_matrix
@@ -40,6 +42,26 @@ def graph_discovery_sparse(nodes):
     res = np.asarray(x.value)
 
     return res.clip(min=0)
+
+def graph_discovery_knn(nodes, nb_neigh=10):
+
+    N = len(nodes)
+
+    alpha = np.hstack([n.alpha for n in nodes])
+
+    x = cvx.Variable(N, N)
+
+    # set node degrees to 1
+    objective = cvx.Minimize(cvx.trace(alpha * (np.eye(N) - x) * alpha.T))
+    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.sum_entries(x, axis=1) == np.ones(N), cvx.sum_entries(x, axis=0) == np.ones((1,N))]
+
+    prob = cvx.Problem(objective, constraints)
+    result = prob.solve()   
+
+    graph_sim = np.asarray(x.value).clip(min=0)
+    nbrs = NearestNeighbors(n_neighbors=2, algorithm='auto').fit(graph_sim)
+
+    return nbrs.kneighbors_graph(graph_sim).toarray()
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
     """ Modify nodes!
@@ -260,7 +282,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, callbacks=None):
+def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, reset_step=True, callbacks=None):
 
     N = len(nodes)
     results = []
@@ -292,14 +314,15 @@ def gd_reg_local_FW(nodes, base_clfs, pace_gd=1, nb_iter=1, beta=None, mu=1, cal
 
         resettable_t += 1
 
-        if dual_gap < N and resettable_t % pace_gd == 0:
+        if resettable_t % pace_gd == 0:
 
             # graph discovery
             adj_matrix = graph_discovery_sparse(nodes)
             set_edges(nodes, adj_matrix)
 
-            # reset gamma
-            resettable_t = 0
+            if reset_step:
+                resettable_t = 0
+
             results[t+1]["adj-matrix"] = adj_matrix
 
     return results

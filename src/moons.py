@@ -13,13 +13,13 @@ from utils import generate_models, generate_moons, get_min_max
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 1000
+NB_ITER = 500
 N = 20
 D = 20
 B = 200
 NOISE_R = 0.05
 random_state = 2017
-MU = 0.05
+MU = 0.01
 BETA = 10
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
@@ -48,14 +48,17 @@ results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta
 # centralized_nodes = deepcopy(nodes)
 # results["centralized"] = centralized_FW(centralized_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-# colearning results
-results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
+# # colearning results
+# results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
 
-# gd_nodes = deepcopy(nodes)
-# results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+gd_nodes = deepcopy(nodes)
+results["gd-regularized"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
-lafond_nodes = deepcopy(nodes)
-results["lafond"] = lafond_FW(lafond_nodes, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
+gd_nodes = deepcopy(nodes)
+results["gd-regularized-noreset"] = gd_reg_local_FW(gd_nodes, base_clfs, pace_gd=10, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
+
+# lafond_nodes = deepcopy(nodes)
+# results["lafond"] = lafond_FW(lafond_nodes, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
 
 # get best accuracy on train and test samples
 best_train_acc, best_test_acc = best_accuracy(nodes)
@@ -71,7 +74,7 @@ for k, r_list in results.items():
 # add results of baseline
 plt.plot(range(len(r_list)), [best_train_acc]*len(r_list), label='best-accuracy')
 
-plt.legend()
+plt.legend(loc='lower right')
 
 plt.subplot(222)
 plt.xlabel('nb iterations')
@@ -80,7 +83,8 @@ plt.ylabel('test accuracy')
 for k, r_list in results.items():
     plt.plot(range(len(r_list)), [r['accuracy'][1] for r in r_list], label='{}'.format(k))
 plt.plot(range(len(r_list)), [best_test_acc]*len(r_list), label='best-accuracy')
-plt.legend()
+
+plt.legend(loc='lower right')
 
 plt.subplot(223)
 plt.xlabel('nb iterations')

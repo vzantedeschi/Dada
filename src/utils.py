@@ -2,6 +2,7 @@ import csv
 from itertools import combinations
 import numpy as np
 import numpy.linalg as LA
+from numpy.polynomial.polynomial import Polynomial, polyval2d
 import math
 import os
 
@@ -246,6 +247,31 @@ def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_
 
     return n, theta_true, cluster_indexes
 
+def generate_polynomials(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2), random_state=1):
+    """Generate true models of all the agents"""
+
+    rng = np.random.RandomState(random_state)
+    
+    if inter_clust_stdev > 0:
+        centroids = rng.normal(size=(nb_clust, 2, 3), scale=inter_clust_stdev)
+
+    else:
+        centroids = np.zeros((nb_clust, 2, 3))
+    
+    cluster_indexes = []
+    start = 0
+    for _ in range(nb_clust):
+        cluster_indexes.append(np.arange(start, start+nodes_per_clust))
+        start += nodes_per_clust
+    
+    roots = [rng.normal(loc=c, scale=intra_clust_stdev, size=(nodes_per_clust, 2, 3)) for c in centroids]
+
+    polynomial_coeffs = np.vstack([Polynomial.fromroots(p) for r in roots for p in r])
+
+    n = len(polynomial_coeffs)
+
+    return n, polynomial_coeffs, cluster_indexes
+
 def generate_moons(n, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=0.1, test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
 
     rng = np.random.RandomState(random_state)
@@ -307,6 +333,34 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
 
     return n_samples, x, y, x_test, y_test, c, C
 
+def generate_samples_from_polynomials(n, polynomial_coeffs, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=np.sqrt(1./2), test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
+    """Generate train and test samples associated with nodes"""
+    
+    rng = np.random.RandomState(random_state)
+    
+    n_samples = rng.randint(min_samples_per_node, max_samples_per_node, size=n)
+    c = n_samples / n_samples.max()
+    C = np.diag(c)
+
+    x, y = [], []
+    for n_i, p in zip(n_samples, polynomial_coeffs):
+        x_i = rng.normal(size=(n_i, dim), scale=samples_stdev)
+        x.append(x_i)
+        y.append(np.sign(polyval2d(x_i[:, 0], x_i[:, 1], p)))
+
+    x_test, y_test = [], []
+    for p in polynomial_coeffs:
+        x_i = rng.normal(size=(test_samples_per_node, dim), scale=samples_stdev)
+        x_test.append(x_i)
+        y_test.append(np.sign(polyval2d(x_i[:, 0], x_i[:, 1], p)))
+    
+    # Add noise
+    for i in range(n):
+        y[i][rng.choice(len(y[i]), replace=False, size=int(sample_error_rate*len(y[i])))] *= -1
+        y_test[i][rng.choice(len(y_test[i]), replace=False, size=int(sample_error_rate*len(y_test[i])))] *= -1
+
+    return n_samples, x, y, x_test, y_test, c, C
+
 # ----------------------------------------------------------
 
 def partition(x, y, nb_nodes, cluster_data=True, random_state=None):
@@ -339,13 +393,13 @@ def get_adj_matrix(similarities):
             break
     return adjacency
 
-def compute_adjacencies(theta_true, n, sigma=0.1):
+def compute_adjacencies(clfs, n, sigma=0.1):
     """Compute graph matrices according to true models of agents"""
     
     pairs = list(zip(*combinations(range(n),2)))
     similarities = np.zeros((n,n))
-    norms_ = np.linalg.norm(theta_true, axis=1)
-    similarities[pairs] = similarities.T[pairs] = ((theta_true[pairs[0],] * theta_true[pairs[1],]).sum(axis=1)/ (norms_[pairs[0],] * norms_[pairs[1],]))
+    norms_ = np.linalg.norm(clfs, axis=1)
+    similarities[pairs] = similarities.T[pairs] = ((clfs[pairs[0],] * clfs[pairs[1],]).sum(axis=1)/ (norms_[pairs[0],] * norms_[pairs[1],]))
     
     similarities = sim_map(similarities, sigma)
     similarities[np.diag_indices(n)] = 0

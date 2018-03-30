@@ -82,7 +82,6 @@ class Node():
         self.test_sample = x
         self.test_labels = y
 
-
 def set_edges(nodes, adj_matrix, max_nb_instances=1):
 
     for i, n in enumerate(nodes):

@@ -24,9 +24,13 @@ def graph_discovery(nodes):
 
     return (np.eye(len(nodes))-laplacian).clip(min=0)
 
-def graph_discovery_sparse(nodes, *args):
+def graph_discovery_sparse(nodes, g=None):
 
     N = len(nodes)
+
+    sparsity = N
+    if g in not None:
+        sparsity = g
 
     alpha = np.hstack([n.alpha for n in nodes])
 
@@ -34,7 +38,7 @@ def graph_discovery_sparse(nodes, *args):
 
     # set node degrees to 1
     objective = cvx.Minimize(cvx.trace(alpha * (np.eye(N) - x) * alpha.T))
-    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.norm(x, 1) <= N, cvx.sum_entries(x, axis=1) == np.ones(N), cvx.sum_entries(x, axis=0) == np.ones((1,N))]
+    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.norm(x, 1) <= sparsity, cvx.sum_entries(x, axis=1) == np.ones(N), cvx.sum_entries(x, axis=0) == np.ones((1,N))]
 
     prob = cvx.Problem(objective, constraints)
     result = prob.solve()

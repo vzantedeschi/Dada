@@ -5,7 +5,10 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 
 def number_edges(nodes, *args):
-    return sum([len(n.neighbors) for n in nodes])
+    try:
+        return sum([len(n.neighbors) for n in nodes])
+    except:
+        return 0.
 
 def alpha_variance(nodes, *args):
     return np.around(np.mean(np.var([n.alpha for n in nodes], axis=0)), decimals=10)

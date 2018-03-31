@@ -21,7 +21,6 @@ CV_SPLITS = 3
 MU_LIST = [10**i for i in range(-3, 4)]
 BETA_LIST = [10**i for i in range(5)]
 STEP_LIST = list(range(10, 110, 10))
-GRAPH_SPARSITY = list(range(5, 20, 2))
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, _, _, _, _ = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
@@ -32,7 +31,7 @@ callbacks = {
 }
 
 results = {}
-results = results.fromkeys(itertools.product(MU_LIST, BETA_LIST, STEP_LIST, GRAPH_SPARSITY), 0.)
+results = results.fromkeys(itertools.product(MU_LIST, BETA_LIST, STEP_LIST), 0.)
 
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
@@ -56,15 +55,14 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
             for step in STEP_LIST:
 
-                for g in GRAPH_SPARSITY:
 
-                    print(mu, beta, step, g)
+                print(mu, beta, step)
 
-                    nodes_copy = deepcopy(nodes)
-                    r = gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"laplacian", "pace_gd": step, "args":(g)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, callbacks=callbacks)
+                nodes_copy = deepcopy(nodes)
+                r = gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"laplacian", "pace_gd": step, "args":()}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, callbacks=callbacks)
 
-                    # keep value of last iteration
-                    results[(mu, beta, step, g)] += r[NB_ITER]["accuracy"][1]
+                # keep value of last iteration
+                results[(mu, beta, step)] += r[NB_ITER]["accuracy"][1]
 
 
-print("best mu, beta, step, g:", max(results, key=results.get))
+print("best mu, beta, step:", max(results, key=results.get))

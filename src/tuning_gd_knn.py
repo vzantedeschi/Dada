@@ -13,7 +13,7 @@ from utils import generate_models, generate_moons, get_split_per_list, get_min_m
 NB_ITER = 200
 N = 20
 D = 20
-B = 100
+B = 200
 NOISE_R = 0.05
 random_state = 2017
 

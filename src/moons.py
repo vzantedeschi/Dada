@@ -19,7 +19,6 @@ D = 20
 B = 200
 NOISE_R = 0.05
 random_state = 2017
-MU = 0.01
 BETA = 10
 
 max_nb_edges = N*(N-1)
@@ -42,7 +41,7 @@ vmin, vmax = get_min_max(X)
 base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 
 nodes_regularized = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=0.01, callbacks=callbacks)
 
 # local_nodes = deepcopy(nodes)
 # results["local"] = local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
@@ -53,11 +52,14 @@ results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta
 # # colearning results
 # results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
 
-gd_nodes = deepcopy(nodes)
-results["gd-regularized-knn"] = gd_reg_local_FW(gd_nodes, base_clfs, gd_method={"name":"knn", "pace_gd": 10, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
+gd_knn_nodes = deepcopy(nodes)
+results["gd-regularized-knn"] = gd_reg_local_FW(gd_knn_nodes, base_clfs, gd_method={"name":"knn", "pace_gd": 10, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=0.01, reset_step=False, callbacks=callbacks)
 
-gd_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian"] = gd_reg_local_FW(gd_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":()}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
+gd_laplacian_nodes = deepcopy(nodes)
+results["gd-regularized-laplacian"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 30, "args":()}, beta=BETA, nb_iter=NB_ITER, mu=1, reset_step=False, callbacks=callbacks)
+
+gd_fullknn_nodes = deepcopy(nodes)
+results["gd-regularized-fullknn"] = gd_reg_local_FW(gd_fullknn_nodes, base_clfs, gd_method={"name":"full-knn", "pace_gd": 30, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=1, reset_step=False, callbacks=callbacks)
 
 # lafond_nodes = deepcopy(nodes)
 # results["lafond"] = lafond_FW(lafond_nodes, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
@@ -116,7 +118,10 @@ plt.xlabel('nb iterations')
 plt.ylabel('nb edges')
 
 for k, r_list in results.items():
-    plt.plot(range(len(r_list)), [r['nb-edges'] for r in r_list], label='{}'.format(k))
+    try:
+        plt.plot(range(len(r_list)), [r['nb-edges'] for r in r_list], label='{}'.format(k))
+    except:
+        pass
 
 plt.plot(range(len(r_list)), [max_nb_edges]*len(r_list), label='full graph')
 

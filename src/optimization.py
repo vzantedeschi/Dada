@@ -59,20 +59,36 @@ def graph_discovery_knn(nodes, k=10):
     result = prob.solve()   
 
     graph_sim = np.asarray(x.value).clip(min=0)
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(graph_sim)
+    nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(1 - graph_sim)
 
     sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
 
     # make it symmetric
     sparsity_mask = np.logical_and(sparsity_mask, sparsity_mask.T)
 
-    assert np.allclose(sparsity_mask, sparsity_mask.T, atol=1e-8)
+    return np.multiply(graph_sim, sparsity_mask)
+
+def graph_discovery_full_knn(nodes, k=10):
+
+    N = len(nodes)
+
+    alpha = np.hstack([n.alpha for n in nodes])
+
+    graph_sim = np.dot(alpha.T, alpha)
+
+    nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(1 - graph_sim)
+
+    sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
+
+    # make it symmetric
+    sparsity_mask = np.logical_and(sparsity_mask, sparsity_mask.T)
 
     return np.multiply(graph_sim, sparsity_mask)
 
 gd_func_dict = {
     "laplacian": graph_discovery_sparse,
     "knn": graph_discovery_knn,
+    "full-knn": graph_discovery_full_knn,
 }
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):

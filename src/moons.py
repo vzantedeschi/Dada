@@ -1,10 +1,11 @@
 from copy import deepcopy
 import numpy as np
+from statistics import mean
 
 from sklearn.utils import shuffle
 
 from classification import get_stumps
-from evaluation import central_accuracy, central_loss, best_accuracy, number_edges
+from evaluation import central_accuracy, central_loss, best_accuracy, degrees
 from network import line_network, synthetic_graph, true_theta_graph
 from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW, gd_reg_local_FW
 from related_works import colearning, lafond_FW
@@ -13,7 +14,7 @@ from utils import generate_models, generate_moons, get_min_max
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 100
+NB_ITER = 200
 N = 20
 D = 20
 B = 200
@@ -32,7 +33,7 @@ nodes, adj_matrix, similarities = synthetic_graph(X, Y, X_test, Y_test, V, theta
 callbacks = {
     'accuracy': [central_accuracy, []],
     'loss': [central_loss, []],
-    'nb-edges': [number_edges, []],
+    'degrees': [degrees, []],
 }
 
 results = {}
@@ -112,21 +113,68 @@ for k, r_list in results.items():
 
 plt.legend()
 
-plt.figure(2)
+plt.figure(2, figsize=(18, 10))
+
+plt.subplot(221)
 
 plt.xlabel('nb iterations')
 plt.ylabel('nb edges')
 
 for k, r_list in results.items():
     try:
-        plt.plot(range(len(r_list)), [r['nb-edges'] for r in r_list], label='{}'.format(k))
+        plt.plot(range(len(r_list)), [sum(r['degrees']) for r in r_list], label='{}'.format(k))
     except:
         pass
 
 plt.plot(range(len(r_list)), [max_nb_edges]*len(r_list), label='full graph')
 
+plt.legend(loc='center right')
 
-plt.legend(loc='lower right')
+plt.subplot(222)
+
+plt.xlabel('nb iterations')
+plt.ylabel('mean degree')
+
+for k, r_list in results.items():
+    try:
+        plt.plot(range(len(r_list)), [mean(r['degrees']) for r in r_list], label='{}'.format(k))
+    except:
+        pass
+
+plt.plot(range(len(r_list)), [N-1]*len(r_list), label='full graph')
+
+plt.legend(loc='center right')
+
+plt.subplot(223)
+
+plt.xlabel('nb iterations')
+plt.ylabel('minimal degree')
+
+for k, r_list in results.items():
+    try:
+        plt.plot(range(len(r_list)), [min(r['degrees']) for r in r_list], label='{}'.format(k))
+    except:
+        pass
+
+plt.plot(range(len(r_list)), [N-1]*len(r_list), label='full graph')
+
+
+plt.legend(loc='center right')
+
+plt.subplot(224)
+
+plt.xlabel('nb iterations')
+plt.ylabel('maximal degree')
+
+for k, r_list in results.items():
+    try:
+        plt.plot(range(len(r_list)), [max(r['degrees']) for r in r_list], label='{}'.format(k))
+    except:
+        pass
+
+plt.plot(range(len(r_list)), [N-1]*len(r_list), label='full graph')
+
+plt.legend(loc='center right')
 
 # for NODE in range(N):
 

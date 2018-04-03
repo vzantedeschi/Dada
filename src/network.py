@@ -82,7 +82,7 @@ class Node():
         self.test_sample = x
         self.test_labels = y
 
-def set_edges(nodes, adj_matrix, max_nb_instances=1):
+def set_edges(nodes, similarities, adj_matrix, max_nb_instances=1):
 
     for i, n in enumerate(nodes):
 
@@ -91,7 +91,7 @@ def set_edges(nodes, adj_matrix, max_nb_instances=1):
 
             if a != 0:
                 neis.append(nodes[j])
-                sims.append(adj_matrix[i][j])
+                sims.append(similarities[i][j])
 
         n.set_neighbors(neis, sims)
         n.confidence /= max_nb_instances 

@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from classification import get_double_basis
 from network import centralize_data, set_edges
-from utils import square_root_matrix
+from utils import square_root_matrix, get_adj_matrix
 
 """
 Boosting algorithms using Frank Wolfe optimization
@@ -64,7 +64,7 @@ def graph_discovery_knn(nodes, k=10):
     sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
 
     # make it symmetric
-    sparsity_mask = np.logical_and(sparsity_mask, sparsity_mask.T)
+    sparsity_mask = np.logical_or(sparsity_mask, sparsity_mask.T)
 
     return np.multiply(graph_sim, sparsity_mask)
 
@@ -81,7 +81,7 @@ def graph_discovery_full_knn(nodes, k=10):
     sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
 
     # make it symmetric
-    sparsity_mask = np.logical_and(sparsity_mask, sparsity_mask.T)
+    sparsity_mask = np.logical_or(sparsity_mask, sparsity_mask.T)
 
     return np.multiply(graph_sim, sparsity_mask)
 
@@ -322,7 +322,7 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1
     # get margin matrices A
     for n in nodes:
         n.init_matrices(base_clfs)
-    set_edges(nodes, np.eye(len(nodes)))
+    set_edges(nodes, np.eye(len(nodes)), np.eye(len(nodes)))
 
     results.append({})  
     for k, call in callbacks.items():
@@ -349,8 +349,9 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1
         if resettable_t % gd_pace == 0 and dual_gap < N:
 
             # graph discovery
-            adj_matrix = gd_function(nodes, gd_args)
-            set_edges(nodes, adj_matrix)
+            similarities = gd_function(nodes, gd_args)
+            adj_matrix = get_adj_matrix(similarities)
+            set_edges(nodes, similarities, adj_matrix)
 
             if reset_step:
                 resettable_t = 0

@@ -4,11 +4,11 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 
-def number_edges(nodes, *args):
+def degrees(nodes, *args):
     try:
-        return sum([len(n.neighbors) for n in nodes])
+        return [len(n.neighbors) for n in nodes]
     except:
-        return 0.
+        return None
 
 def alpha_variance(nodes, *args):
     return np.around(np.mean(np.var([n.alpha for n in nodes], axis=0)), decimals=10)

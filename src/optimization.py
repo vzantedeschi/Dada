@@ -1,5 +1,6 @@
 import cvxpy as cvx
 import numpy as np
+import numpy.linalg as LA
 from random import choice
 
 from sklearn.neighbors import NearestNeighbors
@@ -91,24 +92,25 @@ gd_func_dict = {
     "full-knn": graph_discovery_full_knn,
 }
 
-def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
+def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0):
     """ Modify nodes!
     """
  
     duals = [0] * len(nodes)
+    alphas = []
 
     for i, n in enumerate(nodes):
 
-        if reg_sum:
-            r = reg_sum[i]
-        else:
-            r = None
+        alpha = frank_wolfe_on_one_node(n, i, gamma, duals, beta, t, mu)
+        alphas.append(alpha)
 
-        frank_wolfe_on_one_node(n, i, gamma, duals, beta, t, mu, r)
+    # it's important to set the new alphas only at the end of the round
+    for n, alpha in zip(nodes, alphas):
+        n.set_alpha(alpha)
 
     return duals
 
-def frank_wolfe_on_one_node(n, i, gamma, duals, beta=None, t=1, mu=0, reg_sum=None):
+def frank_wolfe_on_one_node(n, i, gamma, duals, beta=None, t=1, mu=0):
     """ Modify n and duals!
     """
 
@@ -116,7 +118,10 @@ def frank_wolfe_on_one_node(n, i, gamma, duals, beta=None, t=1, mu=0, reg_sum=No
     g = - n.sum_similarities * n.confidence * np.dot(n.margin.T, w) 
 
     if mu > 0:
-        g += mu*(n.alpha - reg_sum) 
+        nei_diff = np.hstack([n.alpha - m.alpha for m in n.neighbors]).T
+        nei_diff_norm = LA.norm(nei_diff, 2, axis=1) 
+        nei_diff_reg = np.vstack([s*d/norm for s,d,norm in zip(n.sim, nei_diff, nei_diff_norm)])
+        g += mu * np.sum(np.nan_to_num(nei_diff_reg), axis=0)[:, None]
 
     if beta is None:
         # simplex constraint
@@ -128,10 +133,11 @@ def frank_wolfe_on_one_node(n, i, gamma, duals, beta=None, t=1, mu=0, reg_sum=No
         s_k = np.sign(-g[j, :]) * beta * np.asarray([[1] if h==j else [0] for h in range(n.n)])
 
     alpha_k = (1 - gamma) * n.alpha + gamma * s_k
-    n.set_alpha(alpha_k)
 
     # update duality gap
     duals[i] = (np.dot((alpha_k - s_k).squeeze(), g.squeeze()))
+
+    return alpha_k
 
 def global_reg_frank_wolfe(nodes, gamma, alpha0, beta=None, t=1):
     """ Modify n and duals!
@@ -261,9 +267,7 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks
 
         gamma = 2 / (2 + t)
 
-        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
-
-        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
+        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu))
 
         results.append({})  
         for k, call in callbacks.items():
@@ -292,16 +296,15 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     for t in range(nb_iter):
 
-        # pick one node at random uniformally
+        # pick one node at random uniformly
         i = choice(range(len(nodes)))
         n = nodes[i]
 
         gamma = 2 * N / (2 * N + iterations[i])
         iterations[i] += 1
 
-        reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
-
-        frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
+        alpha = frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu)
+        n.set_alpha(alpha)
 
         results.append({})  
         for k, call in callbacks.items():
@@ -335,9 +338,7 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1
 
         gamma = 2 / (2 + resettable_t)
 
-        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
-
-        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
+        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu))
 
         results.append({})  
         for k, call in callbacks.items():

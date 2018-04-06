@@ -14,16 +14,16 @@ from utils import generate_models, generate_moons, get_min_max
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 200
+NB_ITER = 100
 N = 20
 D = 20
 B = 200
 NOISE_R = 0.05
 random_state = 2017
 BETA = 10
-MU = 0.1
+MU = 1
 
-MU_GD = 0.1
+MU_GD = 1
 BETA_GD = 10
 PACE_GD = 20
 
@@ -47,14 +47,17 @@ results = {}
 vmin, vmax = get_min_max(X)
 base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 
-nodes_regularized = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
-
 # gd_knn_nodes = deepcopy(nodes)
 # results["gd-regularized-knn"] = gd_reg_local_FW(gd_knn_nodes, base_clfs, gd_method={"name":"knn", "pace_gd": 20, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
 
 gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian-20"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": PACE_GD, "args":()}, beta=BETA_GD, nb_iter=NB_ITER, mu=MU_GD, reset_step=False, callbacks=callbacks)
+results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": PACE_GD, "args":(1)}, beta=BETA_GD, nb_iter=NB_ITER, mu=MU_GD, reset_step=False, callbacks=callbacks)
+
+gd_laplacian_nodes = deepcopy(nodes)
+results["gd-regularized-laplacian-0.2"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": PACE_GD, "args":(0.2)}, beta=BETA_GD, nb_iter=NB_ITER, mu=MU_GD, reset_step=False, callbacks=callbacks)
+
+nodes_regularized = deepcopy(nodes)
+results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
 # gd_fullknn_nodes = deepcopy(nodes)
 # results["gd-regularized-fullknn"] = gd_reg_local_FW(gd_fullknn_nodes, base_clfs, gd_method={"name":"full-knn", "pace_gd": 20, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)

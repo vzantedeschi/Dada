@@ -93,8 +93,7 @@ def set_edges(nodes, similarities, adj_matrix, max_nb_instances=1):
                 neis.append(nodes[j])
                 sims.append(similarities[i][j])
 
-        n.set_neighbors(neis, sims)
-        n.confidence /= max_nb_instances 
+        n.set_neighbors(neis, sims) 
         n.sum_similarities = sum(sims)
 
 
@@ -182,7 +181,7 @@ def random_graph(x, y, nb_nodes=3, prob_edge=1, cluster_data=False, rnd_state=No
 
     return nodes
 
-def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
+def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true, max_nb_instances):
 
     adj_matrix, similarities = compute_adjacencies(theta_true, nb_nodes)
 
@@ -190,7 +189,6 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
     nei_ids = list()
     nei_sim = list()
 
-    max_nb_instances = 1
     for i in range(nb_nodes):
 
         # add offset
@@ -201,8 +199,7 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
 
         n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
         nb_instances = len(x[i])
-        n.confidence = nb_instances
-        max_nb_instances = max(max_nb_instances, nb_instances)
+        n.confidence = nb_instances / max_nb_instances
 
         nei_ids.append([])
         nei_sim.append([])
@@ -214,18 +211,16 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true):
 
     for ids, sims, n in zip(nei_ids, nei_sim, nodes):
         n.set_neighbors([nodes[i] for i in ids], sims)
-        n.confidence /= max_nb_instances 
         n.sum_similarities = sum(sims)
 
     return nodes, adj_matrix, similarities
 
-def graph(x, y, x_test, y_test, nb_nodes, adj_matrix, similarities):
+def graph(x, y, x_test, y_test, nb_nodes, adj_matrix, similarities, max_nb_instances):
 
     nodes = list()
     nei_ids = list()
     nei_sim = list()
 
-    max_nb_instances = 1
     for i in range(nb_nodes):
 
         # add offset
@@ -236,8 +231,7 @@ def graph(x, y, x_test, y_test, nb_nodes, adj_matrix, similarities):
 
         n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
         nb_instances = len(x[i])
-        n.confidence = nb_instances
-        max_nb_instances = max(max_nb_instances, nb_instances)
+        n.confidence = nb_instances / max_nb_instances
 
         nei_ids.append([])
         nei_sim.append([])
@@ -249,7 +243,6 @@ def graph(x, y, x_test, y_test, nb_nodes, adj_matrix, similarities):
 
     for ids, sims, n in zip(nei_ids, nei_sim, nodes):
         n.set_neighbors([nodes[i] for i in ids], sims)
-        n.confidence /= max_nb_instances 
         n.sum_similarities = sum(sims)
 
     return nodes

@@ -384,12 +384,12 @@ def sim_map(arr, sigma):
     (length of arc between two points on the unit circle)"""
     return np.exp(-((1-arr)**2 + (1-arr**2)) / (2*sigma))
 
-def get_adj_matrix(similarities):
+def get_adj_matrix(similarities, eps=1e-3):
 
     thresholds = similarities.max() * np.sqrt(10) ** (- np.arange(1, 100))
     for thresh in thresholds:
         adjacency = similarities > thresh
-        if np.abs(np.linalg.eigvalsh(np.diag(adjacency.sum(axis=1)) - adjacency)[1]) > 1e-3:
+        if np.abs(np.linalg.eigvalsh(np.diag(adjacency.sum(axis=1)) - adjacency)[1]) > eps:
             break
     return adjacency
 

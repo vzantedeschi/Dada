@@ -24,17 +24,18 @@ def graph_discovery(nodes):
 
     return (np.eye(len(nodes))-laplacian).clip(min=0)
 
-def graph_discovery_sparse(nodes, *args):
+def graph_discovery_sparse(nodes, degree=1, *args):
     
     N = len(nodes)
 
     alpha = np.hstack([n.alpha for n in nodes])
-
     x = cvx.Variable(N, N)
 
     # set node degrees to 1
-    objective = cvx.Minimize(cvx.trace(alpha * (np.eye(N) - x) * alpha.T))
-    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.norm(x, 1) <= N, cvx.sum_entries(x, axis=1) == np.ones(N), cvx.sum_entries(x, axis=0) == np.ones((1,N))]
+    degree_matrix = degree*np.eye(N)
+    
+    objective = cvx.Minimize(cvx.trace(alpha * (degree_matrix - x) * alpha.T))
+    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.norm(x, 1) <= degree*N, cvx.sum_entries(x, axis=1) == degree*np.ones(N), cvx.sum_entries(x, axis=0) == degree*np.ones((1,N))]
 
     prob = cvx.Problem(objective, constraints)
     result = prob.solve()
@@ -43,7 +44,7 @@ def graph_discovery_sparse(nodes, *args):
 
     return res.clip(min=0)
 
-def graph_discovery_knn(nodes, k=10):
+def graph_discovery_knn(nodes, k=10, *args):
 
     N = len(nodes)
 
@@ -68,7 +69,7 @@ def graph_discovery_knn(nodes, k=10):
 
     return np.multiply(graph_sim, sparsity_mask)
 
-def graph_discovery_full_knn(nodes, k=10):
+def graph_discovery_full_knn(nodes, k=10, *args):
 
     N = len(nodes)
 
@@ -350,7 +351,7 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1
 
             # graph discovery
             similarities = gd_function(nodes, gd_args)
-            adj_matrix = get_adj_matrix(similarities)
+            adj_matrix = get_adj_matrix(similarities, 1e-3/gd_args)
             set_edges(nodes, similarities, adj_matrix)
 
             if reset_step:

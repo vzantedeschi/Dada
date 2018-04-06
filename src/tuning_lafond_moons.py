@@ -6,7 +6,7 @@ from statistics import mean
 from classification import get_stumps
 from evaluation import central_accuracy
 from network import synthetic_graph
-from optimization import regularized_local_FW
+from related_works import lafond_FW
 from utils import generate_models, generate_moons, get_split_per_list, get_min_max
 
 # set graph of nodes with local personalized data
@@ -18,14 +18,13 @@ NOISE_R = 0.05
 random_state = 2017
 
 CV_SPLITS = 3
-MU_LIST = [10**i for i in range(-3, 4)]
 BETA_LIST = [10**i for i in range(5)]
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, _, _, _, _ = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
 
 results = {}
-results = results.fromkeys(itertools.product(MU_LIST, BETA_LIST), 0.)
+results = results.fromkeys(BETA_LIST, 0.)
 
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
@@ -43,15 +42,13 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
     # set graph
     nodes, _, _ = synthetic_graph(train_x, train_y, test_x, test_y, V, theta_true)
 
-    for mu in MU_LIST:
+    for beta in BETA_LIST:
 
-        for beta in BETA_LIST:
+        print(beta)
+        nodes_copy = deepcopy(nodes)
+        lafond_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, callbacks={})
 
-            print(mu, beta)
-            nodes_copy = deepcopy(nodes)
-            regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, callbacks={})
-
-            results[(mu, beta)] += central_accuracy(nodes_copy)[1]
+        results[beta] += central_accuracy(nodes_copy)[1]
 
 
-print("best mu, beta:", max(results, key=results.get))
+print("best beta:", max(results, key=results.get))

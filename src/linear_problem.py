@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
 NB_ITER = 500
-N = 20
+N = 100
 D = 20
 NOISE_R = 0.05
 random_state = 2017
-BETA = 10 # if None, simplex constraint
+BETA = 1 # if None, simplex constraint
 MU = 1
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)

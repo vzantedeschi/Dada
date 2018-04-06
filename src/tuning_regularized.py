@@ -3,17 +3,16 @@ import itertools
 import numpy as np
 from statistics import mean
 
-from classification import get_stumps
+from classification import get_basis
 from evaluation import central_accuracy
 from network import synthetic_graph
-from optimization import regularized_local_FW
-from utils import generate_models, generate_samples, get_split_per_list, get_min_max
+from optimization import async_regularized_local_FW
+from utils import generate_models, generate_samples, get_split_per_list
 
 # set graph of nodes with local personalized data
-NB_ITER = 100
+NB_ITER = 500
 N = 100
 D = 20
-B = 200
 NOISE_R = 0.05
 random_state = 2017
 
@@ -26,6 +25,8 @@ _, X, Y, _, _, max_nb_instances = generate_samples(V, theta_true, D, random_stat
 
 results = {}.fromkeys(itertools.product(MU_LIST, BETA_LIST), 0.)
 
+base_clfs = get_basis(n=D+1, d=D+1)
+
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
     train_x, test_x, train_y, test_y = [], [], [], []
@@ -35,9 +36,6 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
         test_x.append(X[i][inds[1]])
         train_y.append(Y[i][inds[0]])
         test_y.append(Y[i][inds[1]])
-
-    vmin, vmax = get_min_max(train_x)
-    base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
     
     # set graph
     nodes, _, _ = synthetic_graph(train_x, train_y, test_x, test_y, V, theta_true, max_nb_instances)
@@ -48,7 +46,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
             print(mu, beta)
             nodes_copy = deepcopy(nodes)
-            regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, callbacks={})
+            async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, callbacks={})
 
             # keep value of last iteration
             results[(mu, beta)] += central_accuracy(nodes_copy)[1]

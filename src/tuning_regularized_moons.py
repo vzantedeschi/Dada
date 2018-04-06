@@ -11,7 +11,7 @@ from utils import generate_models, generate_moons, get_split_per_list, get_min_m
 
 # set graph of nodes with local personalized data
 NB_ITER = 100
-N = 20
+N = 100
 D = 20
 B = 200
 NOISE_R = 0.05
@@ -49,7 +49,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
             print(mu, beta)
             nodes_copy = deepcopy(nodes)
-            r = regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, callbacks={})
+            regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, callbacks={})
 
             results[(mu, beta)] += central_accuracy(nodes_copy)[1]
 

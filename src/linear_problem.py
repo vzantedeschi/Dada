@@ -12,12 +12,15 @@ import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
 NB_ITER = 500
-N = 100
+N = 20
 D = 20
 NOISE_R = 0.05
 random_state = 2017
 BETA = 1 # if None, simplex constraint
 MU = 1
+
+BETA_ASYNC = 1
+MU_ASYNC = 0.01
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, X_test, Y_test, max_nb_instances = generate_samples(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
@@ -45,7 +48,7 @@ results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, nb_i
 hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
 nodes_copy = deepcopy(nodes)
-results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA_ASYNC, mu=MU_ASYNC, callbacks=callbacks)
 hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 # nodes_copy = deepcopy(nodes)

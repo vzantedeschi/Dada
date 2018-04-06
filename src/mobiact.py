@@ -17,12 +17,12 @@ NB_ITER = 200
 MU = 5
 BETA = 10
 
-X, Y, X_test, Y_test, adjacency, similarities, nb_nodes = load_mobiact()
+X, Y, X_test, Y_test, adjacency, similarities, nb_nodes, max_nb_instances = load_mobiact()
 
 D = X[0].shape[1]
 B = 5*D
 # set graph
-nodes = graph(X, Y, X_test, Y_test, nb_nodes, adjacency, similarities)
+nodes = graph(X, Y, X_test, Y_test, nb_nodes, adjacency, similarities, max_nb_instances)
 
 
 # set callbacks for optimization analysis

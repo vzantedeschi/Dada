@@ -30,10 +30,10 @@ PACE_GD = 20
 
 max_nb_edges = N*(N-1)
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
-_, X, Y, X_test, Y_test, _, _ = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
+_, X, Y, X_test, Y_test, max_nb_instances = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
 
 # set graph
-nodes, adj_matrix, similarities = synthetic_graph(X, Y, X_test, Y_test, V, theta_true)
+nodes, adj_matrix, similarities = synthetic_graph(X, Y, X_test, Y_test, V, theta_true, max_nb_instances)
 
 # set callbacks for optimization analysis
 callbacks = {

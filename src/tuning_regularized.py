@@ -22,7 +22,7 @@ MU_LIST = [10**i for i in range(-3, 4)]
 BETA_LIST = [10**i for i in range(5)]
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
-_, X, Y, _, _, _, _ = generate_samples(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
+_, X, Y, _, _, max_nb_instances = generate_samples(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
 
 results = {}.fromkeys(itertools.product(MU_LIST, BETA_LIST), 0.)
 
@@ -40,7 +40,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
     base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
     
     # set graph
-    nodes, _, _ = synthetic_graph(train_x, train_y, test_x, test_y, V, theta_true)
+    nodes, _, _ = synthetic_graph(train_x, train_y, test_x, test_y, V, theta_true, max_nb_instances)
 
     for mu in MU_LIST:
 

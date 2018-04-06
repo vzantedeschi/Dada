@@ -15,7 +15,7 @@ MU_LIST = [10**i for i in range(-3, 4)]
 BETA_LIST = [10**i for i in range(5)]
 CV_SPLITS = 3
 
-X, Y, X_test, Y_test, adjacency, similarities, nb_nodes = load_mobiact()
+X, Y, X_test, Y_test, adjacency, similarities, nb_nodes, max_nb_instances = load_mobiact()
 
 D = X[0].shape[1]
 B = 5*D
@@ -41,7 +41,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=None):
         test_y.append(Y[i][inds[1]])
 
     # set graph
-    nodes = graph(train_x, train_y, test_x, test_y, nb_nodes, adjacency, similarities)
+    nodes = graph(train_x, train_y, test_x, test_y, nb_nodes, adjacency, similarities, max_nb_instances)
 
     for mu in MU_LIST:
 

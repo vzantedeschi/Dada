@@ -88,6 +88,7 @@ def load_mobiact(path=DATASET_PATH):
     train_x, train_y, test_x, test_y = [], [], [], []
     users_not_found = []
 
+    max_nb_instances = 1
     for user_id in range(NB_USERS):
         train_f = os.path.join(SETS_DIR, "user{}_train.csv".format(user_id+1))
         test_f = os.path.join(SETS_DIR, "user{}_test.csv".format(user_id+1))
@@ -109,6 +110,8 @@ def load_mobiact(path=DATASET_PATH):
             test_x.append(np.array(test[:, :-1], dtype=np.float32))
             test_y.append(np.array(test_labels, dtype=np.int))
 
+            max_nb_instances = max(max_nb_instances, len(train_x[-1]))
+
         else:
             users_not_found.append(user_id)
 
@@ -122,7 +125,7 @@ def load_mobiact(path=DATASET_PATH):
 
     adjacency = get_adj_matrix(user_distances)
 
-    return train_x, train_y, test_x, test_y, adjacency, user_distances, len(user_distances)
+    return train_x, train_y, test_x, test_y, adjacency, user_distances, len(user_distances), max_nb_instances
 
 def load_wine_dataset():
     
@@ -277,8 +280,7 @@ def generate_moons(n, theta_true, dim, min_samples_per_node=3, max_samples_per_n
     rng = np.random.RandomState(random_state)
     # scaler = MinMaxScaler((-1, 1))
     n_samples = rng.randint(min_samples_per_node, max_samples_per_node, size=n)
-    c = n_samples / n_samples.max()
-    C = np.diag(c)
+    max_nb_local_insts = n_samples.max()
 
     x, y = [], []
     for n_i, s in zip(n_samples, theta_true):
@@ -303,7 +305,7 @@ def generate_moons(n, theta_true, dim, min_samples_per_node=3, max_samples_per_n
         y[i][rng.choice(len(y[i]), replace=False, size=int(sample_error_rate*len(y[i])))] *= -1
         y_test[i][rng.choice(len(y_test[i]), replace=False, size=int(sample_error_rate*len(y_test[i])))] *= -1
 
-    return n_samples, x, y, x_test, y_test, c, C
+    return n_samples, x, y, x_test, y_test, max_nb_local_insts
 
 def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=np.sqrt(1./2), test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
     """Generate train and test samples associated with nodes"""
@@ -311,8 +313,7 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
     rng = np.random.RandomState(random_state)
     
     n_samples = rng.randint(min_samples_per_node, max_samples_per_node, size=n)
-    c = n_samples / n_samples.max()
-    C = np.diag(c)
+    max_nb_local_insts = n_samples.max()
 
     x, y = [], []
     for n_i, s in zip(n_samples, theta_true):
@@ -331,35 +332,7 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
         y[i][rng.choice(len(y[i]), replace=False, size=int(sample_error_rate*len(y[i])))] *= -1
         y_test[i][rng.choice(len(y_test[i]), replace=False, size=int(sample_error_rate*len(y_test[i])))] *= -1
 
-    return n_samples, x, y, x_test, y_test, c, C
-
-def generate_samples_from_polynomials(n, polynomial_coeffs, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=np.sqrt(1./2), test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
-    """Generate train and test samples associated with nodes"""
-    
-    rng = np.random.RandomState(random_state)
-    
-    n_samples = rng.randint(min_samples_per_node, max_samples_per_node, size=n)
-    c = n_samples / n_samples.max()
-    C = np.diag(c)
-
-    x, y = [], []
-    for n_i, p in zip(n_samples, polynomial_coeffs):
-        x_i = rng.normal(size=(n_i, dim), scale=samples_stdev)
-        x.append(x_i)
-        y.append(np.sign(polyval2d(x_i[:, 0], x_i[:, 1], p)))
-
-    x_test, y_test = [], []
-    for p in polynomial_coeffs:
-        x_i = rng.normal(size=(test_samples_per_node, dim), scale=samples_stdev)
-        x_test.append(x_i)
-        y_test.append(np.sign(polyval2d(x_i[:, 0], x_i[:, 1], p)))
-    
-    # Add noise
-    for i in range(n):
-        y[i][rng.choice(len(y[i]), replace=False, size=int(sample_error_rate*len(y[i])))] *= -1
-        y_test[i][rng.choice(len(y_test[i]), replace=False, size=int(sample_error_rate*len(y_test[i])))] *= -1
-
-    return n_samples, x, y, x_test, y_test, c, C
+    return n_samples, x, y, x_test, y_test, max_nb_local_insts
 
 # ----------------------------------------------------------
 

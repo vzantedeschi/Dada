@@ -54,10 +54,9 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
                 print(mu, beta, step)
 
                 nodes_copy = deepcopy(nodes)
-                r = gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"laplacian", "pace_gd": step, "args":()}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, callbacks={})
+                gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"laplacian", "pace_gd": step, "args":(1)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, callbacks={})
 
-                # keep value of last iteration
-                results[(mu, beta)] += central_accuracy(nodes)[1]
+                results[(mu, beta)] += central_accuracy(nodes_copy)[1]
 
 
 print("best mu, beta:", max(results, key=results.get))

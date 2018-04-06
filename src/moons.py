@@ -21,6 +21,12 @@ B = 200
 NOISE_R = 0.05
 random_state = 2017
 BETA = 10
+MU = 0.1
+
+MU_GD = 0.1
+BETA_GD = 10
+PACE_GD = 20
+
 
 max_nb_edges = N*(N-1)
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
@@ -42,25 +48,16 @@ vmin, vmax = get_min_max(X)
 base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 
 nodes_regularized = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=0.01, callbacks=callbacks)
+results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
-# local_nodes = deepcopy(nodes)
-# results["local"] = local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
-
-# centralized_nodes = deepcopy(nodes)
-# results["centralized"] = centralized_FW(centralized_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
-
-# # colearning results
-# results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
-
-gd_knn_nodes = deepcopy(nodes)
-results["gd-regularized-knn"] = gd_reg_local_FW(gd_knn_nodes, base_clfs, gd_method={"name":"knn", "pace_gd": 10, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=0.01, reset_step=False, callbacks=callbacks)
+# gd_knn_nodes = deepcopy(nodes)
+# results["gd-regularized-knn"] = gd_reg_local_FW(gd_knn_nodes, base_clfs, gd_method={"name":"knn", "pace_gd": 20, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
 
 gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 30, "args":()}, beta=BETA, nb_iter=NB_ITER, mu=1, reset_step=False, callbacks=callbacks)
+results["gd-regularized-laplacian-20"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": PACE_GD, "args":()}, beta=BETA_GD, nb_iter=NB_ITER, mu=MU_GD, reset_step=False, callbacks=callbacks)
 
-gd_fullknn_nodes = deepcopy(nodes)
-results["gd-regularized-fullknn"] = gd_reg_local_FW(gd_fullknn_nodes, base_clfs, gd_method={"name":"full-knn", "pace_gd": 30, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=1, reset_step=False, callbacks=callbacks)
+# gd_fullknn_nodes = deepcopy(nodes)
+# results["gd-regularized-fullknn"] = gd_reg_local_FW(gd_fullknn_nodes, base_clfs, gd_method={"name":"full-knn", "pace_gd": 20, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
 
 # lafond_nodes = deepcopy(nodes)
 # results["lafond"] = lafond_FW(lafond_nodes, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)

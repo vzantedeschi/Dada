@@ -116,7 +116,7 @@ def frank_wolfe_on_one_node(n, i, gamma, duals, beta=None, t=1, mu=0, reg_sum=No
     w = n.compute_weights(t)
     g = - n.sum_similarities * n.confidence * np.dot(n.margin.T, w) 
 
-    if mu > 0:
+    if mu > 0 and reg_sum is not None:
         g += mu*(n.sum_similarities * n.alpha - reg_sum) 
 
     if beta is None:

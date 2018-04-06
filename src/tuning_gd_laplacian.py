@@ -11,7 +11,7 @@ from utils import generate_models, generate_moons, get_split_per_list, get_min_m
 
 # set graph of nodes with local personalized data
 NB_ITER = 200
-N = 20
+N = 100
 D = 20
 B = 200
 NOISE_R = 0.05
@@ -24,11 +24,6 @@ STEP_LIST = list(range(10, 110, 10))
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, _, _, _, _ = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
-
-# set callbacks for optimization analysis
-callbacks = {
-    'accuracy': [central_accuracy, []]
-}
 
 results = {}
 results = results.fromkeys(itertools.product(MU_LIST, BETA_LIST, STEP_LIST), 0.)
@@ -59,10 +54,10 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
                 print(mu, beta, step)
 
                 nodes_copy = deepcopy(nodes)
-                r = gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"laplacian", "pace_gd": step, "args":()}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, callbacks=callbacks)
+                r = gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"laplacian", "pace_gd": step, "args":()}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, callbacks={})
 
                 # keep value of last iteration
-                results[(mu, beta, step)] += r[NB_ITER]["accuracy"][1]
+                results[(mu, beta, step)] += central_accuracy(nodes_copy)[1]
 
 
 print("best mu, beta, step:", max(results, key=results.get))

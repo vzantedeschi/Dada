@@ -11,12 +11,12 @@ from utils import generate_models, generate_samples
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 100
-N = 100
+NB_ITER = 5000
+N = 20
 D = 20
 NOISE_R = 0.05
 random_state = 2017
-BETA = 1 # if None, simplex constraint
+BETA = 10 # if None, simplex constraint
 MU = 1
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
@@ -31,7 +31,7 @@ callbacks = {
     'loss': [central_loss, []]
 }
 
-base_clfs = get_basis(n=D, d=D+1)
+base_clfs = get_basis(n=D+1, d=D+1)
 
 results = {}
 hist_accuracies = {}
@@ -44,9 +44,9 @@ nodes_regularized = deepcopy(nodes)
 results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
 hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
-# nodes_copy = deepcopy(nodes)
-# results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
-# hist_accuracies["async_regularized"] = accuracies(nodes_copy)
+nodes_copy = deepcopy(nodes)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
+hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 # nodes_copy = deepcopy(nodes)
 # results["local"] = local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
@@ -57,11 +57,11 @@ hist_accuracies["regularized"] = accuracies(nodes_regularized)
 # hist_accuracies["global-reg"] = accuracies(nodes_copy)
 
 # lafond method
-nodes_copy = deepcopy(nodes)
-results["lafond"] = lafond_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+# nodes_copy = deepcopy(nodes)
+# results["lafond"] = lafond_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-# colearning results
-results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
+# # colearning results
+# results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
 
 # get results with true thetas
 true_graph = true_theta_graph(nodes_copy, theta_true)

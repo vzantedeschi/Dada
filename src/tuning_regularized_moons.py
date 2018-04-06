@@ -37,8 +37,8 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
         train_y.append(Y[i][inds[0]])
         test_y.append(Y[i][inds[1]])
 
-        vmin, vmax = get_min_max(train_x)
-        base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
+    vmin, vmax = get_min_max(train_x)
+    base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 
     # set graph
     nodes, _, _ = synthetic_graph(train_x, train_y, test_x, test_y, V, theta_true)

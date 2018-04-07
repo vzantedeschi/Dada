@@ -11,16 +11,13 @@ from utils import generate_models, generate_samples
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 500
+NB_ITER = 4000
 N = 20
 D = 20
 NOISE_R = 0.05
 random_state = 2017
 BETA = 1 # if None, simplex constraint
 MU = 1
-
-BETA_ASYNC = 1
-MU_ASYNC = 0.01
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, X_test, Y_test, max_nb_instances = generate_samples(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
@@ -48,7 +45,7 @@ results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, nb_i
 hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
 nodes_copy = deepcopy(nodes)
-results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA_ASYNC, mu=MU_ASYNC, callbacks=callbacks)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
 hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 # nodes_copy = deepcopy(nodes)
@@ -60,11 +57,11 @@ hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 # hist_accuracies["global-reg"] = accuracies(nodes_copy)
 
 # lafond method
-# nodes_copy = deepcopy(nodes)
-# results["lafond"] = lafond_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+nodes_copy = deepcopy(nodes)
+results["lafond"] = lafond_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-# # colearning results
-# results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
+# colearning results
+results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
 
 # get results with true thetas
 true_graph = true_theta_graph(nodes_copy, theta_true)
@@ -80,7 +77,7 @@ for k, r_list in results.items():
     plt.plot(range(len(r_list)), [r['accuracy'][0] for r in r_list], label='{}'.format(k))
 # add results of true thetas
 plt.plot(range(len(r_list)), [acc[0]]*len(r_list), label='true-theta')
-plt.legend()
+plt.legend(loc="lower right")
 
 plt.subplot(232)
 plt.xlabel('nb iterations')
@@ -89,7 +86,7 @@ plt.ylabel('test accuracy')
 for k, r_list in results.items():
     plt.plot(range(len(r_list)), [r['accuracy'][1] for r in r_list], label='{}'.format(k))
 plt.plot(range(len(r_list)), [acc[1]]*len(r_list), label='true-theta')
-plt.legend()
+plt.legend(loc="lower right")
 
 plt.subplot(233)
 plt.xlabel('nb iterations')
@@ -101,7 +98,7 @@ for k, r_list in results.items():
     except:
         pass
 
-plt.legend()
+plt.legend(loc="lower right")
 
 plt.subplot(234)
 plt.xlabel('nb iterations')
@@ -113,7 +110,7 @@ for k, r_list in results.items():
     except:
         pass
 
-plt.legend()
+plt.legend(loc="lower right")
 
 plt.figure(2)
 plt.suptitle("Histograms Train Accuracies")

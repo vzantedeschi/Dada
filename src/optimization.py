@@ -1,6 +1,6 @@
 import cvxpy as cvx
 import numpy as np
-from random import choice
+from random import randint
 
 from sklearn.neighbors import NearestNeighbors
 
@@ -294,10 +294,10 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
     for t in range(nb_iter):
 
         # pick one node at random uniformally
-        i = choice(range(len(nodes)))
+        i = randint(0, len(nodes)-1)
         n = nodes[i]
 
-        gamma = 2 * N / (2 * N + iterations[i])
+        gamma = 2 / (2 + iterations[i])
         iterations[i] += 1
 
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])

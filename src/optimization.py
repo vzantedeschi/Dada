@@ -297,7 +297,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
         i = randint(0, len(nodes)-1)
         n = nodes[i]
 
-        gamma = 2 * N / (2 * N + iterations[i])
+        gamma = 2 / (2 + iterations[i])
         iterations[i] += 1
 
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])

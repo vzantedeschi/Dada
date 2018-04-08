@@ -1,17 +1,18 @@
 from copy import deepcopy
 import numpy as np
+from statistics import mean
 
 from classification import get_basis
-from evaluation import central_accuracy, central_loss, accuracies
+from evaluation import central_accuracy, central_loss, accuracies, degrees
 from network import line_network, synthetic_graph, true_theta_graph
-from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW
+from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW, gd_reg_local_FW
 from related_works import lafond_FW, colearning
 from utils import generate_models, generate_samples
 
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 4000
+NB_ITER = 500
 N = 20
 D = 20
 NOISE_R = 0.05
@@ -28,7 +29,8 @@ nodes, adj_matrix, similarities = synthetic_graph(X, Y, X_test, Y_test, V, theta
 # set callbacks for optimization analysis
 callbacks = {
     'accuracy': [central_accuracy, []],
-    'loss': [central_loss, []]
+    'loss': [central_loss, []],
+    'edges': [degrees, []]
 }
 
 base_clfs = get_basis(n=D+1, d=D+1)
@@ -44,9 +46,9 @@ nodes_regularized = deepcopy(nodes)
 results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
 hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
-nodes_copy = deepcopy(nodes)
-results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
-hist_accuracies["async_regularized"] = accuracies(nodes_copy)
+# nodes_copy = deepcopy(nodes)
+# results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
+# hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 # nodes_copy = deepcopy(nodes)
 # results["local"] = local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
@@ -56,15 +58,24 @@ hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 # results["global-reg"] = global_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
 # hist_accuracies["global-reg"] = accuracies(nodes_copy)
 
-# lafond method
-nodes_copy = deepcopy(nodes)
-results["lafond"] = lafond_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+gd_laplacian_nodes = deepcopy(nodes)
+results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
 
-# colearning results
-results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
+gd_laplacian_nodes = deepcopy(nodes)
+results["gd-regularized-laplacian-N"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(N)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
+
+gd_laplacian_nodes = deepcopy(nodes)
+results["gd-regularized-laplacian-3"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(3)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
+
+# # lafond method
+# nodes_copy = deepcopy(nodes)
+# results["lafond"] = lafond_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+
+# # colearning results
+# results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
 
 # get results with true thetas
-true_graph = true_theta_graph(nodes_copy, theta_true)
+true_graph = true_theta_graph(gd_laplacian_nodes, theta_true)
 acc = central_accuracy(true_graph)
 
 plt.figure(1, figsize=(18, 10))
@@ -131,5 +142,70 @@ for i, (k, r_list) in enumerate(hist_accuracies.items()):
     plt.title(k)
     plt.ylim(0, N)
     plt.hist(r_list[1], 10, range=(0, 1))
+
+plt.figure(2, figsize=(18, 10))
+
+max_nb_edges = N*(N-1)
+
+plt.subplot(221)
+
+plt.xlabel('nb iterations')
+plt.ylabel('nb edges')
+
+for k, r_list in results.items():
+    try:
+        plt.plot(range(len(r_list)), [sum(r['edges']) for r in r_list], label='{}'.format(k))
+    except:
+        pass
+
+plt.plot(range(len(r_list)), [max_nb_edges]*len(r_list), label='full graph')
+
+plt.legend(loc='center right')
+
+plt.subplot(222)
+
+plt.xlabel('nb iterations')
+plt.ylabel('mean degree')
+
+for k, r_list in results.items():
+    try:
+        plt.plot(range(len(r_list)), [mean(r['edges']) for r in r_list], label='{}'.format(k))
+    except:
+        pass
+
+plt.plot(range(len(r_list)), [N-1]*len(r_list), label='full graph')
+
+plt.legend(loc='center right')
+
+plt.subplot(223)
+
+plt.xlabel('nb iterations')
+plt.ylabel('minimal degree')
+
+for k, r_list in results.items():
+    try:
+        plt.plot(range(len(r_list)), [min(r['edges']) for r in r_list], label='{}'.format(k))
+    except:
+        pass
+
+plt.plot(range(len(r_list)), [N-1]*len(r_list), label='full graph')
+
+
+plt.legend(loc='center right')
+
+plt.subplot(224)
+
+plt.xlabel('nb iterations')
+plt.ylabel('maximal degree')
+
+for k, r_list in results.items():
+    try:
+        plt.plot(range(len(r_list)), [max(r['edges']) for r in r_list], label='{}'.format(k))
+    except:
+        pass
+
+plt.plot(range(len(r_list)), [N-1]*len(r_list), label='full graph')
+
+plt.legend(loc='center right')
 
 plt.show()

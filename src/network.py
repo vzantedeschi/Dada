@@ -96,7 +96,6 @@ def set_edges(nodes, similarities, adj_matrix, max_nb_instances=1):
         n.set_neighbors(neis, sims) 
         n.sum_similarities = sum(sims)
 
-
 def centralize_data(nodes):
 
     if len(nodes) == 1:

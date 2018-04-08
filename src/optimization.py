@@ -14,7 +14,7 @@ Boosting algorithms using Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def graph_discovery(nodes):
+def graph_discovery(nodes, *args):
 
     alpha = np.hstack([n.alpha for n in nodes])
 
@@ -23,6 +23,26 @@ def graph_discovery(nodes):
     laplacian /= np.trace(laplacian)
 
     return (np.eye(len(nodes))-laplacian).clip(min=0)
+
+# def graph_discovery_sparse(nodes, degree=1, *args):
+    
+#     N = len(nodes)
+
+#     alpha = np.hstack([n.alpha for n in nodes])
+#     x = cvx.Variable(N, N)
+
+#     # # set node degrees to 1
+#     # degree_matrix = degree*np.eye(N)
+    
+#     objective = cvx.Minimize(cvx.trace(alpha * (cvx.diag(cvx.sum_entries(x, axis=1)) - x) * alpha.T))
+#     constraints = [x >= np.zeros((N,N)), cvx.norm(x, 1) <= degree*N, cvx.trace(x) == 1]
+
+#     prob = cvx.Problem(objective, constraints)
+#     result = prob.solve()
+
+#     res = np.asarray(x.value)
+
+#     return res.clip(min=0)
 
 def graph_discovery_sparse(nodes, degree=1, *args):
     
@@ -35,7 +55,7 @@ def graph_discovery_sparse(nodes, degree=1, *args):
     degree_matrix = degree*np.eye(N)
     
     objective = cvx.Minimize(cvx.trace(alpha * (degree_matrix - x) * alpha.T))
-    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.norm(x, 1) <= degree*N, cvx.sum_entries(x, axis=1) == degree*np.ones(N), cvx.sum_entries(x, axis=0) == degree*np.ones((1,N))]
+    constraints = [x >= np.zeros((N,N)), cvx.norm(x, 1) <= degree*N, cvx.sum_entries(x, axis=1) == degree*np.ones(N), cvx.sum_entries(x, axis=0) == degree*np.ones((1,N))]
 
     prob = cvx.Problem(objective, constraints)
     result = prob.solve()
@@ -87,6 +107,7 @@ def graph_discovery_full_knn(nodes, k=10, *args):
     return np.multiply(graph_sim, sparsity_mask)
 
 gd_func_dict = {
+    "default": graph_discovery,
     "laplacian": graph_discovery_sparse,
     "knn": graph_discovery_knn,
     "full-knn": graph_discovery_full_knn,
@@ -116,7 +137,7 @@ def frank_wolfe_on_one_node(n, i, gamma, duals, beta=None, t=1, mu=0, reg_sum=No
     w = n.compute_weights(t)
     g = - n.sum_similarities * n.confidence * np.dot(n.margin.T, w) 
 
-    if mu > 0 and reg_sum is not None:
+    if mu > 0 and type(reg_sum) != int:
         g += mu*(n.sum_similarities * n.alpha - reg_sum) 
 
     if beta is None:
@@ -311,7 +332,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=True, callbacks=None):
+def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, eps=1, reset_step=False, callbacks=None):
 
     N = len(nodes)
     results = []
@@ -347,11 +368,11 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1
 
         resettable_t += 1
 
-        if resettable_t % gd_pace == 0 and dual_gap < N:
+        if resettable_t % gd_pace == 0 and dual_gap < N*eps:
 
             # graph discovery
             similarities = gd_function(nodes, gd_args)
-            adj_matrix = get_adj_matrix(similarities, 1e-3/gd_args)
+            adj_matrix = get_adj_matrix(similarities, 1e-3)
             set_edges(nodes, similarities, adj_matrix)
 
             if reset_step:

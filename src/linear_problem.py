@@ -3,7 +3,7 @@ import numpy as np
 from statistics import mean
 
 from classification import get_basis
-from evaluation import central_accuracy, central_loss, accuracies, degrees
+from evaluation import central_accuracy, central_loss, accuracies, edges
 from network import line_network, synthetic_graph, true_theta_graph
 from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW, gd_reg_local_FW
 from related_works import lafond_FW, colearning
@@ -30,7 +30,7 @@ nodes, adj_matrix, similarities = synthetic_graph(X, Y, X_test, Y_test, V, theta
 callbacks = {
     'accuracy': [central_accuracy, []],
     'loss': [central_loss, []],
-    'edges': [degrees, []]
+    'edges': [edges, []]
 }
 
 base_clfs = get_basis(n=D+1, d=D+1)
@@ -165,7 +165,7 @@ plt.legend(loc='center right')
 plt.subplot(222)
 
 plt.xlabel('nb iterations')
-plt.ylabel('mean degree')
+plt.ylabel('mean nb edges')
 
 for k, r_list in results.items():
     try:
@@ -180,7 +180,7 @@ plt.legend(loc='center right')
 plt.subplot(223)
 
 plt.xlabel('nb iterations')
-plt.ylabel('minimal degree')
+plt.ylabel('minimal nb edges')
 
 for k, r_list in results.items():
     try:
@@ -196,7 +196,7 @@ plt.legend(loc='center right')
 plt.subplot(224)
 
 plt.xlabel('nb iterations')
-plt.ylabel('maximal degree')
+plt.ylabel('maximal nb edges')
 
 for k, r_list in results.items():
     try:

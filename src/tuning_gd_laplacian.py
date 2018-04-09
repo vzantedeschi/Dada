@@ -25,8 +25,7 @@ STEP_LIST = list(range(10, 80, 10))
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, _, _, max_nb_instances = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
 
-results = {}
-results = results.fromkeys(itertools.product(MU_LIST, BETA_LIST), 0.)
+results = {}.fromkeys(itertools.product(MU_LIST, BETA_LIST), 0.)
 
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
@@ -49,7 +48,6 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
         for beta in BETA_LIST:
 
             for step in STEP_LIST:
-
 
                 print(mu, beta, step)
 

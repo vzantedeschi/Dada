@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 
-def degrees(nodes, *args):
+def edges(nodes, *args):
     try:
         return [len(n.neighbors) for n in nodes]
     except:

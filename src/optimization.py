@@ -62,6 +62,7 @@ def graph_discovery_sparse(nodes, degree=1, *args):
 
     res = np.asarray(x.value)
 
+    # erase possible negative values infinitively small
     return res.clip(min=0)
 
 def graph_discovery_knn(nodes, k=10, *args):
@@ -332,6 +333,56 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     return results
 
+def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=1, eps=1, callbacks=None):
+
+    results = []
+    N = len(nodes)
+
+    iterations = [0] * N
+
+    # get margin matrices A
+    for n in nodes:
+        n.init_matrices(base_clfs)
+    set_edges(nodes, np.eye(len(nodes)), np.eye(len(nodes)))
+
+    results.append({})  
+    for k, call in callbacks.items():
+        results[0][k] = call[0](nodes, *call[1])
+    results[0]["duality-gap"] = 0
+
+    duals = [0] * N
+
+    for t in range(nb_iter):
+
+        # pick one node at random uniformally
+        i = randint(0, len(nodes)-1)
+        n = nodes[i]
+
+        gamma = 2 / (2 + iterations[i])
+        iterations[i] += 1
+
+        reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
+
+        frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
+
+        dual_gap = sum(duals)
+
+        results.append({})  
+        for k, call in callbacks.items():
+            results[t+1][k] = call[0](nodes, *call[1])
+        results[t+1]["duality-gap"] = dual_gap
+
+        if t % pace_gd == 0:
+
+            # graph discovery
+            similarities = graph_discovery_sparse(nodes)
+            adj_matrix = get_adj_matrix(similarities, 1e-3)
+            set_edges(nodes, similarities, adj_matrix)
+
+            results[t+1]["adj-matrix"] = adj_matrix
+
+    return results
+
 def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, eps=1, reset_step=False, callbacks=None):
 
     N = len(nodes)
@@ -368,7 +419,7 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1
 
         resettable_t += 1
 
-        if resettable_t % gd_pace == 0 and dual_gap < N*eps:
+        if resettable_t % gd_pace == 0:
 
             # graph discovery
             similarities = gd_function(nodes, gd_args)

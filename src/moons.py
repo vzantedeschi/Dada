@@ -5,16 +5,16 @@ from statistics import mean
 from sklearn.utils import shuffle
 
 from classification import get_stumps
-from evaluation import central_accuracy, central_loss, best_accuracy, degrees
+from evaluation import central_accuracy, central_loss, best_accuracy, edges
 from network import line_network, synthetic_graph, true_theta_graph
-from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW, gd_reg_local_FW
+from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW, gd_reg_local_FW, async_gd_reg_local_FW
 from related_works import colearning, lafond_FW
 from utils import generate_models, generate_moons, get_min_max
 
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 200
+NB_ITER = 300
 N = 20
 D = 20
 B = 200
@@ -34,7 +34,7 @@ nodes, adj_matrix, similarities = synthetic_graph(X, Y, X_test, Y_test, V, theta
 callbacks = {
     'accuracy': [central_accuracy, []],
     'loss': [central_loss, []],
-    'degrees': [degrees, []],
+    'edges': [edges, []],
 }
 
 results = {}
@@ -45,14 +45,20 @@ base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 # gd_knn_nodes = deepcopy(nodes)
 # results["gd-regularized-knn"] = gd_reg_local_FW(gd_knn_nodes, base_clfs, gd_method={"name":"knn", "pace_gd": 20, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
 
-gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
+# nodes_copy = deepcopy(nodes)
+# results["async-gd"] = async_gd_reg_local_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER,pace_gd=20, callbacks=callbacks)
 
-gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian-0.2"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(0.2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
+# gd_laplacian_nodes = deepcopy(nodes)
+# results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 20, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
 
 nodes_regularized = deepcopy(nodes)
 results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+
+nodes_regularized = deepcopy(nodes)
+results["async-regularized"] = async_regularized_local_FW(nodes_regularized, base_clfs, beta=1, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+
+# nodes_local = deepcopy(nodes)
+# results["local"] = local_FW(nodes_local, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
 # gd_fullknn_nodes = deepcopy(nodes)
 # results["gd-regularized-fullknn"] = gd_reg_local_FW(gd_fullknn_nodes, base_clfs, gd_method={"name":"full-knn", "pace_gd": 20, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
@@ -117,7 +123,7 @@ plt.ylabel('nb edges')
 
 for k, r_list in results.items():
     try:
-        plt.plot(range(len(r_list)), [sum(r['degrees']) for r in r_list], label='{}'.format(k))
+        plt.plot(range(len(r_list)), [sum(r['edges']) for r in r_list], label='{}'.format(k))
     except:
         pass
 
@@ -128,11 +134,11 @@ plt.legend(loc='center right')
 plt.subplot(222)
 
 plt.xlabel('nb iterations')
-plt.ylabel('mean degree')
+plt.ylabel('mean nb edges')
 
 for k, r_list in results.items():
     try:
-        plt.plot(range(len(r_list)), [mean(r['degrees']) for r in r_list], label='{}'.format(k))
+        plt.plot(range(len(r_list)), [mean(r['edges']) for r in r_list], label='{}'.format(k))
     except:
         pass
 
@@ -143,11 +149,11 @@ plt.legend(loc='center right')
 plt.subplot(223)
 
 plt.xlabel('nb iterations')
-plt.ylabel('minimal degree')
+plt.ylabel('minimal nb edges')
 
 for k, r_list in results.items():
     try:
-        plt.plot(range(len(r_list)), [min(r['degrees']) for r in r_list], label='{}'.format(k))
+        plt.plot(range(len(r_list)), [min(r['edges']) for r in r_list], label='{}'.format(k))
     except:
         pass
 
@@ -159,11 +165,11 @@ plt.legend(loc='center right')
 plt.subplot(224)
 
 plt.xlabel('nb iterations')
-plt.ylabel('maximal degree')
+plt.ylabel('maximal nb edges')
 
 for k, r_list in results.items():
     try:
-        plt.plot(range(len(r_list)), [max(r['degrees']) for r in r_list], label='{}'.format(k))
+        plt.plot(range(len(r_list)), [max(r['edges']) for r in r_list], label='{}'.format(k))
     except:
         pass
 

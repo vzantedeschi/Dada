@@ -379,7 +379,7 @@ def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=
             adj_matrix = get_adj_matrix(similarities, 1e-3)
             set_edges(nodes, similarities, adj_matrix)
 
-            results[t+1]["adj-matrix"] = adj_matrix
+            results[t+1]["adj-matrix"] = similarities
 
     return results
 
@@ -429,7 +429,7 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1
             if reset_step:
                 resettable_t = 0
 
-            results[t+1]["adj-matrix"] = adj_matrix
+            results[t+1]["adj-matrix"] = similarities
 
     return results
 # ---------------------------------------------------------------- global consensus FW

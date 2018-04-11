@@ -48,10 +48,13 @@ base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 # nodes_copy = deepcopy(nodes)
 # results["async-gd"] = async_gd_reg_local_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER,pace_gd=20, callbacks=callbacks)
 
-gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 20, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
+# gd_laplacian_nodes = deepcopy(nodes)
+# results["gd-regularized-laplacian-20"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 20, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
 
-print(results["gd-regularized-laplacian-1"][NB_ITER]["adj-matrix"])
+gd_laplacian_nodes = deepcopy(nodes)
+results["gd-regularized-laplacian-10"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(8)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
+
+print(results["gd-regularized-laplacian-10"][NB_ITER]["adj-matrix"])
 
 # nodes_regularized = deepcopy(nodes)
 # results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)

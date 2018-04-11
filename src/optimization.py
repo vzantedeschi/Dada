@@ -51,17 +51,17 @@ def graph_discovery_sparse(nodes, degree=1, *args):
     alpha = np.hstack([n.alpha for n in nodes])
     x = cvx.Variable(N, N)
 
-    # set node degrees to 1
-    degree_matrix = degree*np.eye(N)
+    # set node degrees
+    degree_matrix = 2*degree*np.eye(N)
     
-    objective = cvx.Minimize(cvx.trace(alpha * (degree_matrix - x) * alpha.T))
-    constraints = [x >= np.zeros((N,N)), cvx.norm(x, 1) <= degree*N, cvx.sum_entries(x, axis=1) == degree*np.ones(N), cvx.sum_entries(x, axis=0) == degree*np.ones((1,N))]
+    objective = cvx.Minimize(cvx.trace(alpha * (cvx.diag(cvx.sum_entries(x, axis=1)) - x) * alpha.T))
+    constraints = [x >= np.zeros((N,N)), cvx.trace(cvx.diag(cvx.sum_entries(x, axis=1)) - x) == degree*N]
 
     prob = cvx.Problem(objective, constraints)
     result = prob.solve()
 
     res = np.asarray(x.value)
-
+    print(np.sum(res))
     # erase possible negative values infinitively small
     return res.clip(min=0)
 

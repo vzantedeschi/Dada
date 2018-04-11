@@ -12,7 +12,7 @@ from utils import generate_models, generate_samples
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 500
+NB_ITER = 100
 N = 20
 D = 20
 NOISE_R = 0.05
@@ -38,34 +38,34 @@ base_clfs = get_basis(n=D+1, d=D+1)
 results = {}
 hist_accuracies = {}
 
-# nodes_centralized = deepcopy(nodes)
-# results["centralized"] = centralized_FW(nodes_centralized, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
-# hist_accuracies["centralized"] = accuracies(nodes_centralized)
+nodes_centralized = deepcopy(nodes)
+results["centralized"] = centralized_FW(nodes_centralized, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
+hist_accuracies["centralized"] = accuracies(nodes_centralized)
 
 nodes_regularized = deepcopy(nodes)
 results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
 hist_accuracies["regularized"] = accuracies(nodes_regularized)
 
-# nodes_copy = deepcopy(nodes)
-# results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
-# hist_accuracies["async_regularized"] = accuracies(nodes_copy)
+nodes_copy = deepcopy(nodes)
+results["async_regularized"] = async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, mu=MU, callbacks=callbacks)
+hist_accuracies["async_regularized"] = accuracies(nodes_copy)
 
 # nodes_copy = deepcopy(nodes)
 # results["local"] = local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
 # hist_accuracies["local"] = accuracies(nodes_copy)
 
-# nodes_copy = deepcopy(nodes)
-# results["global-reg"] = global_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
-# hist_accuracies["global-reg"] = accuracies(nodes_copy)
+nodes_copy = deepcopy(nodes)
+results["global-reg"] = global_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
+hist_accuracies["global-reg"] = accuracies(nodes_copy)
 
-gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
+# gd_laplacian_nodes = deepcopy(nodes)
+# results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
 
-gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian-N"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(N)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
+# gd_laplacian_nodes = deepcopy(nodes)
+# results["gd-regularized-laplacian-N"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(N)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
 
-gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian-3"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(3)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
+# gd_laplacian_nodes = deepcopy(nodes)
+# results["gd-regularized-laplacian-3"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(3)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=1, callbacks=callbacks)
 
 # # lafond method
 # nodes_copy = deepcopy(nodes)
@@ -75,7 +75,7 @@ results["gd-regularized-laplacian-3"] = gd_reg_local_FW(gd_laplacian_nodes, base
 # results["colearning"], clf_colearning = colearning(N, X, Y, X_test, Y_test, D, NB_ITER, adj_matrix, similarities)
 
 # get results with true thetas
-true_graph = true_theta_graph(gd_laplacian_nodes, theta_true)
+true_graph = true_theta_graph(nodes_copy, theta_true)
 acc = central_accuracy(true_graph)
 
 plt.figure(1, figsize=(18, 10))

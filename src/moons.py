@@ -14,7 +14,7 @@ from utils import generate_models, generate_moons, get_min_max
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 300
+NB_ITER = 200
 N = 20
 D = 20
 B = 200
@@ -48,20 +48,22 @@ base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 # nodes_copy = deepcopy(nodes)
 # results["async-gd"] = async_gd_reg_local_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER,pace_gd=20, callbacks=callbacks)
 
-# gd_laplacian_nodes = deepcopy(nodes)
-# results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 20, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
+gd_laplacian_nodes = deepcopy(nodes)
+results["gd-regularized-laplacian-1"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 20, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
 
-nodes_regularized = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+print(results["gd-regularized-laplacian-1"][NB_ITER]["adj-matrix"])
 
-nodes_regularized = deepcopy(nodes)
-results["async-regularized"] = async_regularized_local_FW(nodes_regularized, base_clfs, beta=1, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+# nodes_regularized = deepcopy(nodes)
+# results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
-# nodes_local = deepcopy(nodes)
-# results["local"] = local_FW(nodes_local, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+# # nodes_regularized = deepcopy(nodes)
+# # results["async-regularized"] = async_regularized_local_FW(nodes_regularized, base_clfs, beta=1, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
-# gd_fullknn_nodes = deepcopy(nodes)
-# results["gd-regularized-fullknn"] = gd_reg_local_FW(gd_fullknn_nodes, base_clfs, gd_method={"name":"full-knn", "pace_gd": 20, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
+nodes_local = deepcopy(nodes)
+results["local"] = local_FW(nodes_local, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
+
+# global_nodes = deepcopy(nodes)
+# results["global-reg"] = global_regularized_local_FW(global_nodes, base_clfs, beta=1000, nb_iter=NB_ITER, callbacks=callbacks)
 
 # lafond_nodes = deepcopy(nodes)
 # results["lafond"] = lafond_FW(lafond_nodes, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
@@ -101,6 +103,7 @@ for k, r_list in results.items():
         plt.plot(range(len(r_list)), [r['loss'] for r in r_list], label='{}'.format(k))
     except:
         pass
+plt.legend(loc='lower right')
 
 plt.subplot(224)
 plt.xlabel('nb iterations')

@@ -90,8 +90,14 @@ def set_edges(nodes, similarities, adj_matrix, max_nb_instances=1):
         for j, a in enumerate(adj_matrix[i]):
 
             if a != 0:
+                
+                s = similarities[i][j]
+
+                if i == j:
+                    s *= 2
+
                 neis.append(nodes[j])
-                sims.append(similarities[i][j])
+                sims.append(s)
 
         n.set_neighbors(neis, sims) 
         n.sum_similarities = sum(sims)

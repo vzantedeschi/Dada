@@ -24,27 +24,7 @@ def graph_discovery(nodes, *args):
 
     return (np.eye(len(nodes))-laplacian).clip(min=0)
 
-# def graph_discovery_sparse(nodes, degree=1, *args):
-    
-#     N = len(nodes)
-
-#     alpha = np.hstack([n.alpha for n in nodes])
-#     x = cvx.Variable(N, N)
-
-#     # # set node degrees to 1
-#     # degree_matrix = degree*np.eye(N)
-    
-#     objective = cvx.Minimize(cvx.trace(alpha * (cvx.diag(cvx.sum_entries(x, axis=1)) - x) * alpha.T))
-#     constraints = [x >= np.zeros((N,N)), cvx.norm(x, 1) <= degree*N, cvx.trace(x) == 1]
-
-#     prob = cvx.Problem(objective, constraints)
-#     result = prob.solve()
-
-#     res = np.asarray(x.value)
-
-#     return res.clip(min=0)
-
-def graph_discovery_sparse(nodes, degree=1, *args):
+def graph_discovery_sparse(nodes, k=1, *args):
     
     N = len(nodes)
 
@@ -52,18 +32,20 @@ def graph_discovery_sparse(nodes, degree=1, *args):
     x = cvx.Variable(N, N)
 
     # set node degrees
-    degree_matrix = 2*degree*np.eye(N)
+    degree_matrix = np.eye(N)
     
-    objective = cvx.Minimize(cvx.trace(alpha * (cvx.diag(cvx.sum_entries(x, axis=1)) - x) * alpha.T))
-    constraints = [x >= np.zeros((N,N)), cvx.trace(cvx.diag(cvx.sum_entries(x, axis=1)) - x) == degree*N]
+    objective = cvx.Minimize(cvx.trace(alpha * (degree_matrix - x) * alpha.T))
+    constraints = [x >= np.zeros((N,N)), x < np.ones((N,N))/k, cvx.trace(x) == 0., cvx.sum_entries(x, 1) == np.ones(N), cvx.sum_entries(x, 0) == np.ones((1, N))]
 
     prob = cvx.Problem(objective, constraints)
     result = prob.solve()
 
     res = np.asarray(x.value)
-    print(np.sum(res))
-    # erase possible negative values infinitively small
-    return res.clip(min=0)
+
+    # drop insignificant edges
+    res[res < 1/N] = 0.
+
+    return res
 
 def graph_discovery_knn(nodes, k=10, *args):
 
@@ -333,7 +315,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     return results
 
-def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=1, eps=1, callbacks=None):
+def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=1, callbacks=None):
 
     results = []
     N = len(nodes)
@@ -376,7 +358,7 @@ def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=
 
             # graph discovery
             similarities = graph_discovery_sparse(nodes)
-            adj_matrix = get_adj_matrix(similarities, 1e-3)
+            adj_matrix = get_adj_matrix(similarities, 1e-2)
             set_edges(nodes, similarities, adj_matrix)
 
             results[t+1]["adj-matrix"] = similarities

@@ -6,7 +6,7 @@ from sklearn.utils import shuffle
 
 from classification import get_stumps
 from evaluation import central_accuracy, central_loss, best_accuracy, edges
-from network import line_network, synthetic_graph, true_theta_graph
+from network import line_network, synthetic_graph, true_theta_graph, get_alphas
 from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW, gd_reg_local_FW, async_gd_reg_local_FW
 from related_works import colearning, lafond_FW
 from utils import generate_models, generate_moons, get_min_max
@@ -14,7 +14,7 @@ from utils import generate_models, generate_moons, get_min_max
 import matplotlib.pyplot as plt
 
 # set graph of nodes with local personalized data
-NB_ITER = 200
+NB_ITER = 100
 N = 20
 D = 20
 B = 200
@@ -42,34 +42,17 @@ results = {}
 vmin, vmax = get_min_max(X)
 base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 
-# gd_knn_nodes = deepcopy(nodes)
-# results["gd-regularized-knn"] = gd_reg_local_FW(gd_knn_nodes, base_clfs, gd_method={"name":"knn", "pace_gd": 20, "args":(N//2)}, beta=BETA, nb_iter=NB_ITER, mu=MU, reset_step=False, callbacks=callbacks)
-
-# nodes_copy = deepcopy(nodes)
-# results["async-gd"] = async_gd_reg_local_FW(nodes_copy, base_clfs, beta=BETA, nb_iter=NB_ITER,pace_gd=20, callbacks=callbacks)
-
-# gd_laplacian_nodes = deepcopy(nodes)
-# results["gd-regularized-laplacian-20"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 20, "args":(1)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
-
-gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian-10"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd": 10, "args":(8)}, beta=BETA, nb_iter=NB_ITER, mu=MU, eps=N/2, callbacks=callbacks)
-
-print(results["gd-regularized-laplacian-10"][NB_ITER]["adj-matrix"])
-
-# nodes_regularized = deepcopy(nodes)
-# results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
-
-# # nodes_regularized = deepcopy(nodes)
-# # results["async-regularized"] = async_regularized_local_FW(nodes_regularized, base_clfs, beta=1, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
-
 nodes_local = deepcopy(nodes)
 results["local"] = local_FW(nodes_local, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-# global_nodes = deepcopy(nodes)
-# results["global-reg"] = global_regularized_local_FW(global_nodes, base_clfs, beta=1000, nb_iter=NB_ITER, callbacks=callbacks)
+nodes_regularized = deepcopy(nodes)
+results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=
+    NB_ITER, mu=MU, callbacks=callbacks)
 
-# lafond_nodes = deepcopy(nodes)
-# results["lafond"] = lafond_FW(lafond_nodes, base_clfs, nb_iter=NB_ITER, beta=BETA, callbacks=callbacks)
+local_alphas = get_alphas(nodes_local)
+
+gd_laplacian_nodes = deepcopy(nodes)
+results["gd-regularized-laplacian"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd": 40, "args":(8)}, beta=BETA, nb_iter=NB_ITER, mu=0.1, callbacks=callbacks)
 
 # get best accuracy on train and test samples
 best_train_acc, best_test_acc = best_accuracy(nodes)

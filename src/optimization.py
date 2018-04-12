@@ -365,7 +365,7 @@ def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, eps=1, reset_step=False, callbacks=None):
+def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, callbacks=None):
 
     N = len(nodes)
     results = []
@@ -375,8 +375,8 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"laplacian", "pace_gd":1
     gd_pace = gd_method["pace_gd"]
 
     # get margin matrices A
-    for n in nodes:
-        n.init_matrices(base_clfs)
+    for n, alpha in zip(nodes, local_alphas):
+        n.init_matrices(base_clfs, alpha=alpha)
     set_edges(nodes, np.eye(len(nodes)), np.eye(len(nodes)))
 
     results.append({})  

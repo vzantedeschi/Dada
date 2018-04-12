@@ -139,7 +139,7 @@ def compute_graph_matrices(n, adjacency, similarities):
 
     return L, d
 
-def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similarities, max_samples_per_node=20):
+def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similarities, max_samples_per_node=20, checkevery=1):
 
     results = []
     alpha = 0.5
@@ -149,8 +149,10 @@ def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similari
     results.append({"accuracy": (class_ratio(theta, x, y), class_ratio(theta, x_test, y_test))})
     
     # Collaborative learning
-    for _ in range(nb_iter):
+    for t in range(nb_iter):
         theta -= cost_function_gradient(L, d, theta, x, y, alpha, max_samples_per_node)
-        results.append({"accuracy": (class_ratio(theta, x, y), class_ratio(theta, x_test, y_test))})
+
+        if t % checkevery == 0:
+            results.append({"accuracy": (class_ratio(theta, x, y), class_ratio(theta, x_test, y_test))})
 
     return results, theta

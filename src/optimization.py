@@ -278,7 +278,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, callback
 
 #     return results
 
-def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None):
+def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None, checkevery=1):
 
     results = []
     N = len(nodes)
@@ -309,14 +309,15 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks
 
         frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
 
-        results.append({})  
-        for k, call in callbacks.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = sum(duals)
+        if t % checkevery == 0:
+            results.append({})  
+            for k, call in callbacks.items():
+                results[len(results)-1][k] = call[0](nodes, *call[1])
+            results[len(results)-1]["duality-gap"] = sum(duals)
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, callbacks=None):
+def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, callbacks=None, checkevery=1):
 
     results = []
     N = len(nodes)
@@ -357,10 +358,11 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 
         dual_gap = sum(duals)
 
-        results.append({})  
-        for k, call in callbacks.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        if t % checkevery == 0:
+            results.append({})  
+            for k, call in callbacks.items():
+                results[len(results)-1][k] = call[0](nodes, *call[1])
+            results[len(results)-1]["duality-gap"] = dual_gap
 
         resettable_t += 1
 
@@ -374,7 +376,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
             if reset_step:
                 resettable_t = 0
 
-            results[t+1]["adj-matrix"] = similarities
+            # results[t+1]["adj-matrix"] = similarities
 
     return results
 

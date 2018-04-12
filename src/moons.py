@@ -51,13 +51,13 @@ results["local"] = local_FW(nodes_local, base_clfs, beta=BETA, nb_iter=NB_ITER, 
 # # nodes_regularized = deepcopy(nodes)
 # # results["async-regularized"] = async_regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER*2, mu=MU, callbacks=callbacks)
 
-# nodes_regularized = deepcopy(nodes)
-# results["async-regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+nodes_regularized = deepcopy(nodes)
+results["async-regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks, checkevery=10)
 
 init_w = graph_discovery_sparse(nodes_local, 8)
 
 gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": 200, "args":(8)}, beta=BETA, nb_iter=NB_ITER*10, mu=0.1, callbacks=callbacks)
+results["gd-regularized-laplacian"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": 200, "args":(8)}, beta=BETA, nb_iter=NB_ITER*10, mu=0.1, callbacks=callbacks, checkevery=100)
 
 # get best accuracy on train and test samples
 best_train_acc, best_test_acc = best_accuracy(nodes)

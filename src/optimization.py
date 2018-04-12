@@ -41,6 +41,7 @@ def graph_discovery_sparse(nodes, k=1, *args):
     result = prob.solve()
 
     res = np.asarray(x.value)
+    assert np.allclose(res, res.T)
 
     # drop insignificant edges
     res[res < 1/N] = 0.
@@ -248,36 +249,36 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, callback
 
     return results
 
-def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None):
+# def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None):
 
-    results = []
+#     results = []
 
-    # get margin matrices A
-    for n in nodes:
-        n.init_matrices(base_clfs)
+#     # get margin matrices A
+#     for n in nodes:
+#         n.init_matrices(base_clfs)
 
-    results.append({})  
-    for k, call in callbacks.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+#     results.append({})  
+#     for k, call in callbacks.items():
+#         results[0][k] = call[0](nodes, *call[1])
+#     results[0]["duality-gap"] = 0
     
-    # frank-wolfe
-    for t in range(nb_iter):
+#     # frank-wolfe
+#     for t in range(nb_iter):
 
-        gamma = 2 / (2 + t)
+#         gamma = 2 / (2 + t)
 
-        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
+#         reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
 
-        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
+#         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
 
-        results.append({})  
-        for k, call in callbacks.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+#         results.append({})  
+#         for k, call in callbacks.items():
+#             results[t+1][k] = call[0](nodes, *call[1])
+#         results[t+1]["duality-gap"] = dual_gap
 
-    return results
+#     return results
 
-def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None):
+def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None):
 
     results = []
     N = len(nodes)
@@ -301,7 +302,7 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
         i = randint(0, len(nodes)-1)
         n = nodes[i]
 
-        gamma = 2 / (2 + iterations[i])
+        gamma = 2 * N / (2 * N + t)
         iterations[i] += 1
 
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
@@ -315,17 +316,23 @@ def async_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, cal
 
     return results
 
-def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=1, callbacks=None):
+def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, callbacks=None):
 
     results = []
     N = len(nodes)
+
+    gd_function = gd_func_dict[gd_method["name"]]
+    gd_args = gd_method["args"]
+    gd_pace = gd_method["pace_gd"]
 
     iterations = [0] * N
 
     # get margin matrices A
     for n in nodes:
         n.init_matrices(base_clfs)
-    set_edges(nodes, np.eye(len(nodes)), np.eye(len(nodes)))
+        
+    adj_matrix = get_adj_matrix(init_w, 1e-3)
+    set_edges(nodes, init_w, adj_matrix)
 
     results.append({})  
     for k, call in callbacks.items():
@@ -334,13 +341,14 @@ def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=
 
     duals = [0] * N
 
+    resettable_t = 0
     for t in range(nb_iter):
 
         # pick one node at random uniformally
         i = randint(0, len(nodes)-1)
         n = nodes[i]
 
-        gamma = 2 / (2 + iterations[i])
+        gamma = 2*N / (2*N + t)
         iterations[i] += 1
 
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
@@ -348,51 +356,6 @@ def async_gd_reg_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, pace_gd=
         frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
 
         dual_gap = sum(duals)
-
-        results.append({})  
-        for k, call in callbacks.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
-
-        if t % pace_gd == 0:
-
-            # graph discovery
-            similarities = graph_discovery_sparse(nodes)
-            adj_matrix = get_adj_matrix(similarities, 1e-2)
-            set_edges(nodes, similarities, adj_matrix)
-
-            results[t+1]["adj-matrix"] = similarities
-
-    return results
-
-def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, callbacks=None):
-
-    N = len(nodes)
-    results = []
-
-    gd_function = gd_func_dict[gd_method["name"]]
-    gd_args = gd_method["args"]
-    gd_pace = gd_method["pace_gd"]
-
-    # get margin matrices A
-    for n, alpha in zip(nodes, local_alphas):
-        n.init_matrices(base_clfs, alpha=alpha)
-    set_edges(nodes, np.eye(len(nodes)), np.eye(len(nodes)))
-
-    results.append({})  
-    for k, call in callbacks.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
-
-    resettable_t = 0
-    # frank-wolfe
-    for t in range(nb_iter):
-
-        gamma = 2 / (2 + resettable_t)
-
-        reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
-
-        dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
 
         results.append({})  
         for k, call in callbacks.items():
@@ -414,6 +377,56 @@ def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"laplacian
             results[t+1]["adj-matrix"] = similarities
 
     return results
+
+# def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, callbacks=None):
+
+#     N = len(nodes)
+#     results = []
+
+#     gd_function = gd_func_dict[gd_method["name"]]
+#     gd_args = gd_method["args"]
+#     gd_pace = gd_method["pace_gd"]
+
+#     # get margin matrices A
+#     for n, alpha in zip(nodes, local_alphas):
+#         n.init_matrices(base_clfs, alpha=alpha)
+#     set_edges(nodes, np.eye(len(nodes)), np.eye(len(nodes)))
+
+#     results.append({})  
+#     for k, call in callbacks.items():
+#         results[0][k] = call[0](nodes, *call[1])
+#     results[0]["duality-gap"] = 0
+
+#     resettable_t = 0
+#     # frank-wolfe
+#     for t in range(nb_iter):
+
+#         gamma = 2 / (2 + resettable_t)
+
+#         reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
+
+#         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
+
+#         results.append({})  
+#         for k, call in callbacks.items():
+#             results[t+1][k] = call[0](nodes, *call[1])
+#         results[t+1]["duality-gap"] = dual_gap
+
+#         resettable_t += 1
+
+#         if resettable_t % gd_pace == 0:
+
+#             # graph discovery
+#             similarities = gd_function(nodes, gd_args)
+#             adj_matrix = get_adj_matrix(similarities, 1e-3)
+#             set_edges(nodes, similarities, adj_matrix)
+
+#             if reset_step:
+#                 resettable_t = 0
+
+#             results[t+1]["adj-matrix"] = similarities
+
+#     return results
 # ---------------------------------------------------------------- global consensus FW
 
 def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, callbacks=None):

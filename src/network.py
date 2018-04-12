@@ -23,14 +23,18 @@ class Node():
             return np.sign(np.dot(self.get_predictions(sample), self.alpha + self.alpha0))
         return self.clf.predict(sample) 
 
-    def init_matrices(self, base_clfs):
+    def init_matrices(self, base_clfs, alpha=None, alpha0=None):
         # set weak classifiers
         self.n = len(base_clfs)
         self.base_clfs = base_clfs
 
         # set alpha and A
-        alpha = np.zeros((self.n, 1))
-        alpha0 = np.zeros((self.n, 1))
+        if alpha is None:
+            alpha = np.zeros((self.n, 1))
+
+        if alpha0 is None:
+            alpha0 = np.zeros((self.n, 1))
+        
         self.set_margin_matrix()
         self.set_alpha(alpha, alpha0)
 
@@ -81,6 +85,12 @@ class Node():
     def set_test_set(self, x, y):
         self.test_sample = x
         self.test_labels = y
+
+def get_alphas(nodes):
+
+    alphas = [n.alpha for n in nodes]
+
+    return alphas
 
 def set_edges(nodes, similarities, adj_matrix, max_nb_instances=1):
 

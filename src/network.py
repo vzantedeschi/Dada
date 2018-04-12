@@ -20,7 +20,9 @@ class Node():
 
     def predict(self, sample):
         if self.clf is None:
-            return np.sign(np.dot(self.get_predictions(sample), self.alpha + self.alpha0))
+            p = np.sign(np.dot(self.get_predictions(sample), self.alpha + self.alpha0))
+            p[p==0] = 1
+            return p
         return self.clf.predict(sample) 
 
     def init_matrices(self, base_clfs, alpha=None, alpha0=None):

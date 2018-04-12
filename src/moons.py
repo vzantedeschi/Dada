@@ -7,7 +7,7 @@ from sklearn.utils import shuffle
 from classification import get_stumps
 from evaluation import central_accuracy, central_loss, best_accuracy, edges
 from network import line_network, synthetic_graph, true_theta_graph, get_alphas
-from optimization import centralized_FW, regularized_local_FW, local_FW, async_regularized_local_FW, global_regularized_local_FW, gd_reg_local_FW, async_gd_reg_local_FW
+from optimization import centralized_FW, regularized_local_FW, local_FW, global_regularized_local_FW, gd_reg_local_FW, graph_discovery_sparse
 from related_works import colearning, lafond_FW
 from utils import generate_models, generate_moons, get_min_max
 
@@ -45,14 +45,19 @@ base_clfs = get_stumps(n=B, d=D+1, min_v=vmin, max_v=vmax)
 nodes_local = deepcopy(nodes)
 results["local"] = local_FW(nodes_local, base_clfs, beta=BETA, nb_iter=NB_ITER, callbacks=callbacks)
 
-nodes_regularized = deepcopy(nodes)
-results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=
-    NB_ITER, mu=MU, callbacks=callbacks)
+# nodes_regularized = deepcopy(nodes)
+# results["regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
 
-local_alphas = get_alphas(nodes_local)
+# # nodes_regularized = deepcopy(nodes)
+# # results["async-regularized"] = async_regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER*2, mu=MU, callbacks=callbacks)
+
+# nodes_regularized = deepcopy(nodes)
+# results["async-regularized"] = regularized_local_FW(nodes_regularized, base_clfs, beta=BETA, nb_iter=NB_ITER, mu=MU, callbacks=callbacks)
+
+init_w = graph_discovery_sparse(nodes_local, 8)
 
 gd_laplacian_nodes = deepcopy(nodes)
-results["gd-regularized-laplacian"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd": 40, "args":(8)}, beta=BETA, nb_iter=NB_ITER, mu=0.1, callbacks=callbacks)
+results["gd-regularized-laplacian"] = gd_reg_local_FW(gd_laplacian_nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": 200, "args":(8)}, beta=BETA, nb_iter=NB_ITER*10, mu=0.1, callbacks=callbacks)
 
 # get best accuracy on train and test samples
 best_train_acc, best_test_acc = best_accuracy(nodes)

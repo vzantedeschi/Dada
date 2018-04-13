@@ -1,1 +1,1 @@
-# Decentralized Learning of Local Models with Uncertainties
+# Decentralized Frank-Wolfe Boosting for Collaborative Learning of Personalized Models

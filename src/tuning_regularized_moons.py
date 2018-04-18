@@ -4,7 +4,7 @@ import numpy as np
 from statistics import mean
 
 from classification import get_stumps
-from evaluation import central_accuracy
+from evaluation import central_test_accuracy
 from network import synthetic_graph
 from optimization import regularized_local_FW
 from utils import generate_models, generate_moons, get_split_per_list, get_min_max
@@ -51,7 +51,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
             nodes_copy = deepcopy(nodes)
             regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, monitors={})
 
-            results[(mu, beta)] += central_accuracy(nodes_copy)[1]
+            results[(mu, beta)] += central_test_accuracy(nodes_copy)
 
 
 print("best mu, beta:", max(results, key=results.get))

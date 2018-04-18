@@ -4,7 +4,7 @@ import numpy as np
 from statistics import mean
 
 from classification import get_basis
-from evaluation import central_accuracy
+from evaluation import central_test_accuracy
 from network import synthetic_graph
 from optimization import async_regularized_local_FW
 from utils import generate_models, generate_samples, get_split_per_list
@@ -49,6 +49,6 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
             async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, monitors={})
 
             # keep value of last iteration
-            results[(mu, beta)] += central_accuracy(nodes_copy)[1]
+            results[(mu, beta)] += central_test_accuracy(nodes_copy)
 
 print("best mu, beta:", max(results, key=results.get))

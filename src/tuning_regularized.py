@@ -46,7 +46,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
             print(mu, beta)
             nodes_copy = deepcopy(nodes)
-            async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, callbacks={})
+            async_regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, monitors={})
 
             # keep value of last iteration
             results[(mu, beta)] += central_accuracy(nodes_copy)[1]

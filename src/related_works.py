@@ -41,7 +41,7 @@ def gac_routine(vectors, nodes, nb_iter):
 
     return new_vectors
 
-def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None):
+def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, monitors=None):
 
     results = []
     
@@ -50,7 +50,7 @@ def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None)
         n.init_matrices(base_clfs)
 
     results.append({})  
-    for k, call in callbacks.items():
+    for k, call in monitors.items():
         results[0][k] = call[0](nodes, *call[1])
     results[0]["duality-gap"] = 0
 
@@ -81,7 +81,7 @@ def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None)
             n.set_alpha(a)
 
         results.append({})  
-        for k, call in callbacks.items():
+        for k, call in monitors.items():
             results[i+1][k] = call[0](nodes, *call[1])
         results[i+1]["duality-gap"] = sum(duals)
 

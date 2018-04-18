@@ -7,8 +7,9 @@ This is the source code of the paper submitted to ECMLPKDD2018.
 ## Installation
 
 1. Install required python modules:
-
- > pip install -r requirements.txt
+``` bash
+ pip install -r requirements.txt
+```
 
 ## Notebooks
 

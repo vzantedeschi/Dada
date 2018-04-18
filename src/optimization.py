@@ -193,7 +193,7 @@ def global_reg_frank_wolfe(nodes, gamma, alpha0, beta=None, t=1):
 
 # --------------------------------------------------------------------- local learning
 
-def local_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
+def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
     results = []
     
@@ -202,7 +202,7 @@ def local_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
         n.init_matrices(base_clfs)
 
     results.append({})  
-    for k, call in callbacks.items():
+    for k, call in monitors.items():
         results[0][k] = call[0](nodes, *call[1])
     results[0]["duality-gap"] = 0
 
@@ -215,13 +215,13 @@ def local_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta))
 
         results.append({})  
-        for k, call in callbacks.items():
+        for k, call in monitors.items():
             results[t+1][k] = call[0](nodes, *call[1])
         results[t+1]["duality-gap"] = dual_gap
 
     return results
 
-def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
+def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
     results = []
 
@@ -231,7 +231,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, callback
     alpha0 = np.zeros((len(base_clfs), 1))
 
     results.append({})  
-    for k, call in callbacks.items():
+    for k, call in monitors.items():
         results[0][k] = call[0](nodes, *call[1])
     results[0]["duality-gap"] = 0
     
@@ -243,13 +243,13 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, callback
         dual_gap, alpha0 = global_reg_frank_wolfe(nodes, gamma, alpha0, beta=beta, t=1)
 
         results.append({})  
-        for k, call in callbacks.items():
+        for k, call in monitors.items():
             results[t+1][k] = call[0](nodes, *call[1])
         results[t+1]["duality-gap"] = dual_gap
 
     return results
 
-# def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None):
+# def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=None):
 
 #     results = []
 
@@ -258,7 +258,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, callback
 #         n.init_matrices(base_clfs)
 
 #     results.append({})  
-#     for k, call in callbacks.items():
+#     for k, call in monitors.items():
 #         results[0][k] = call[0](nodes, *call[1])
 #     results[0]["duality-gap"] = 0
     
@@ -272,13 +272,13 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, callback
 #         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
 
 #         results.append({})  
-#         for k, call in callbacks.items():
+#         for k, call in monitors.items():
 #             results[t+1][k] = call[0](nodes, *call[1])
 #         results[t+1]["duality-gap"] = dual_gap
 
 #     return results
 
-def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks=None, checkevery=1):
+def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=None, checkevery=1):
 
     results = []
     N = len(nodes)
@@ -290,7 +290,7 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks
         n.init_matrices(base_clfs)
 
     results.append({})  
-    for k, call in callbacks.items():
+    for k, call in monitors.items():
         results[0][k] = call[0](nodes, *call[1])
     results[0]["duality-gap"] = 0
 
@@ -311,13 +311,13 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, callbacks
 
         if t % checkevery == 0:
             results.append({})  
-            for k, call in callbacks.items():
+            for k, call in monitors.items():
                 results[len(results)-1][k] = call[0](nodes, *call[1])
             results[len(results)-1]["duality-gap"] = sum(duals)
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, callbacks=None, checkevery=1):
+def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, monitors=None, checkevery=1):
 
     results = []
     N = len(nodes)
@@ -336,7 +336,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
     set_edges(nodes, init_w, adj_matrix)
 
     results.append({})  
-    for k, call in callbacks.items():
+    for k, call in monitors.items():
         results[0][k] = call[0](nodes, *call[1])
     results[0]["duality-gap"] = 0
 
@@ -360,7 +360,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 
         if t % checkevery == 0:
             results.append({})  
-            for k, call in callbacks.items():
+            for k, call in monitors.items():
                 results[len(results)-1][k] = call[0](nodes, *call[1])
             results[len(results)-1]["duality-gap"] = dual_gap
 
@@ -380,7 +380,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 
     return results
 
-# def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, callbacks=None):
+# def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, monitors=None):
 
 #     N = len(nodes)
 #     results = []
@@ -395,7 +395,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 #     set_edges(nodes, np.eye(len(nodes)), np.eye(len(nodes)))
 
 #     results.append({})  
-#     for k, call in callbacks.items():
+#     for k, call in monitors.items():
 #         results[0][k] = call[0](nodes, *call[1])
 #     results[0]["duality-gap"] = 0
 
@@ -410,7 +410,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 #         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
 
 #         results.append({})  
-#         for k, call in callbacks.items():
+#         for k, call in monitors.items():
 #             results[t+1][k] = call[0](nodes, *call[1])
 #         results[t+1]["duality-gap"] = dual_gap
 
@@ -431,7 +431,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 #     return results
 # ---------------------------------------------------------------- global consensus FW
 
-def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, callbacks=None):
+def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, monitors=None):
 
     results = []
 
@@ -440,7 +440,7 @@ def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, callbacks
         n.init_matrices(base_clfs)
 
     results.append({})  
-    for k, call in callbacks.items():
+    for k, call in monitors.items():
         results[0][k] = call[0](nodes, *call[1])
     results[0]["duality-gap"] = 0
 
@@ -465,13 +465,13 @@ def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, callbacks
             n.set_alpha(a)
 
         results.append({})  
-        for k, call in callbacks.items():
+        for k, call in monitors.items():
             results[t+1][k] = call[0](nodes, *call[1])
         results[t+1]["duality-gap"] = dual_gap
 
     return results
 
-def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
+def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
     results = []
 
@@ -481,7 +481,7 @@ def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
     list_node = [node]
 
     results.append({})  
-    for k, call in callbacks.items():
+    for k, call in monitors.items():
         results[0][k] = call[0](list_node, *call[1])
     results[0]["duality-gap"] = 0
 
@@ -493,7 +493,7 @@ def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, callbacks=None):
         dual_gap = sum(one_frank_wolfe_round(list_node, gamma, beta))
 
         results.append({})  
-        for k, call in callbacks.items():
+        for k, call in monitors.items():
             results[t+1][k] = call[0](list_node, *call[1])
         results[t+1]["duality-gap"] = dual_gap
 

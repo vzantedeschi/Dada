@@ -14,16 +14,6 @@ Boosting algorithms using Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def graph_discovery(nodes, *args):
-
-    alpha = np.hstack([n.alpha for n in nodes])
-
-    laplacian = square_root_matrix(np.dot(alpha.T, alpha))
-
-    laplacian /= np.trace(laplacian)
-
-    return (np.eye(len(nodes))-laplacian).clip(min=0)
-
 def graph_discovery_sparse(nodes, k=1, *args):
     
     N = len(nodes)
@@ -91,7 +81,6 @@ def graph_discovery_full_knn(nodes, k=10, *args):
     return np.multiply(graph_sim, sparsity_mask)
 
 gd_func_dict = {
-    "default": graph_discovery,
     "laplacian": graph_discovery_sparse,
     "knn": graph_discovery_knn,
     "full-knn": graph_discovery_full_knn,
@@ -249,41 +238,10 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors
 
     return results
 
-# def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=None):
-
-#     results = []
-
-#     # get margin matrices A
-#     for n in nodes:
-#         n.init_matrices(base_clfs)
-
-#     results.append({})  
-#     for k, call in monitors.items():
-#         results[0][k] = call[0](nodes, *call[1])
-#     results[0]["duality-gap"] = 0
-    
-#     # frank-wolfe
-#     for t in range(nb_iter):
-
-#         gamma = 2 / (2 + t)
-
-#         reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
-
-#         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
-
-#         results.append({})  
-#         for k, call in monitors.items():
-#             results[t+1][k] = call[0](nodes, *call[1])
-#         results[t+1]["duality-gap"] = dual_gap
-
-#     return results
-
 def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=None, checkevery=1):
 
     results = []
     N = len(nodes)
-
-    iterations = [0] * N
 
     # get margin matrices A
     for n in nodes:
@@ -303,7 +261,6 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
         n = nodes[i]
 
         gamma = 2 * N / (2 * N + t)
-        iterations[i] += 1
 
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
 
@@ -325,8 +282,6 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
     gd_function = gd_func_dict[gd_method["name"]]
     gd_args = gd_method["args"]
     gd_pace = gd_method["pace_gd"]
-
-    iterations = [0] * N
 
     # get margin matrices A
     for n in nodes:
@@ -350,7 +305,6 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
         n = nodes[i]
 
         gamma = 2*N / (2*N + t)
-        iterations[i] += 1
 
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
 
@@ -380,55 +334,6 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 
     return results
 
-# def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, monitors=None):
-
-#     N = len(nodes)
-#     results = []
-
-#     gd_function = gd_func_dict[gd_method["name"]]
-#     gd_args = gd_method["args"]
-#     gd_pace = gd_method["pace_gd"]
-
-#     # get margin matrices A
-#     for n, alpha in zip(nodes, local_alphas):
-#         n.init_matrices(base_clfs, alpha=alpha)
-#     set_edges(nodes, np.eye(len(nodes)), np.eye(len(nodes)))
-
-#     results.append({})  
-#     for k, call in monitors.items():
-#         results[0][k] = call[0](nodes, *call[1])
-#     results[0]["duality-gap"] = 0
-
-#     resettable_t = 0
-#     # frank-wolfe
-#     for t in range(nb_iter):
-
-#         gamma = 2 / (2 + resettable_t)
-
-#         reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
-
-#         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
-
-#         results.append({})  
-#         for k, call in monitors.items():
-#             results[t+1][k] = call[0](nodes, *call[1])
-#         results[t+1]["duality-gap"] = dual_gap
-
-#         resettable_t += 1
-
-#         if resettable_t % gd_pace == 0:
-
-#             # graph discovery
-#             similarities = gd_function(nodes, gd_args)
-#             adj_matrix = get_adj_matrix(similarities, 1e-3)
-#             set_edges(nodes, similarities, adj_matrix)
-
-#             if reset_step:
-#                 resettable_t = 0
-
-#             results[t+1]["adj-matrix"] = similarities
-
-#     return results
 # ---------------------------------------------------------------- global consensus FW
 
 def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, monitors=None):

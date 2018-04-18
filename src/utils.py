@@ -12,7 +12,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import normalize, scale, MinMaxScaler
 
-# ----------------------------------------------------------------------------- IO FUNCTIONS
+# -------------------------------------------------------------------------- IO FUNCTIONS
 
 def make_directory(dir_path):
     if not os.path.exists(dir_path):
@@ -71,139 +71,6 @@ def rotate(v1, v2):
     rotation = np.asarray([[c, -s], [s, c]])
 
     return np.dot(v1, rotation)
-
-# ---------------------------------------------------------------------- LOAD DATASETS
-
-DATASET_PATH = os.path.join("datasets")
-
-def load_mobiact(path=DATASET_PATH):
-
-    import pandas as pd
-    from sklearn.metrics.pairwise import pairwise_distances
-
-    USER_FILE = os.path.join(path, "Mobi_Users.csv")
-    SETS_DIR = os.path.join(path, "Mobi_Generated") 
-    NB_USERS = 67
-
-    train_x, train_y, test_x, test_y = [], [], [], []
-    users_not_found = []
-
-    max_nb_instances = 1
-    for user_id in range(NB_USERS):
-        train_f = os.path.join(SETS_DIR, "user{}_train.csv".format(user_id+1))
-        test_f = os.path.join(SETS_DIR, "user{}_test.csv".format(user_id+1))
-
-        if os.path.isfile(train_f):
-            train = pd.read_csv(train_f).as_matrix()[2:, 1:]
-            test = pd.read_csv(test_f).as_matrix()[2:, 1:]
-
-            train_labels = train[:, -1]
-            train_labels[train_labels != "FOL"] = -1
-            train_labels[train_labels == "FOL"] = 1
-
-            test_labels = test[:, -1]
-            test_labels[test_labels != "FOL"] = -1
-            test_labels[test_labels == "FOL"] = 1
-
-            train_x.append(np.array(train[:, :-1], dtype=np.float32))
-            train_y.append(np.array(train_labels, dtype=np.int))
-            test_x.append(np.array(test[:, :-1], dtype=np.float32))
-            test_y.append(np.array(test_labels, dtype=np.int))
-
-            max_nb_instances = max(max_nb_instances, len(train_x[-1]))
-
-        else:
-            users_not_found.append(user_id)
-
-    users = pd.read_csv(USER_FILE, usecols=(3, 4, 5, 6))
-    users.replace(('M', 'F', '-'), (1, 0, 0.5), inplace=True)
-    users.drop(users.index[users_not_found], inplace=True)
-
-    min_max_scaler = MinMaxScaler()
-    scaled_users = min_max_scaler.fit_transform(users[['Age', 'Height', 'Weight', 'Gender']])
-    user_distances = pairwise_distances(scaled_users)
-
-    adjacency = get_adj_matrix(user_distances)
-
-    return train_x, train_y, test_x, test_y, adjacency, user_distances, len(user_distances), max_nb_instances
-
-def load_wine_dataset():
-    
-    X, Y = load_wine(return_X_y=True)
-
-    # keep only two classes with labels -1,1
-    indices = Y != 2
-    Y, X = Y[indices], X[indices]
-    Y[Y==0] = -1
-
-    return scale(X), Y
-
-def load_iris_dataset():
-    
-    X, Y = load_iris(return_X_y=True)
-
-    # merge two classes, only two classes with labels -1,1
-    Y[Y==0] = -1
-    Y[Y==2] = 1
-
-    return scale(X), Y
-
-def load_breast_dataset():
-    
-    X, Y = load_breast_cancer(return_X_y=True)
-    Y[Y==0] = -1
-
-    return X, Y
-
-def load_uci_dataset(name, y_pos=0):
-
-    dataset = np.loadtxt(name)
-
-    if y_pos == -1:
-        x, y = np.split(dataset, [-1], axis=1)
-    else:
-        y, x = np.split(dataset, [1], axis=1)
-
-    return scale(x), np.squeeze(y)
-
-def load_csr_matrix(filename, y_pos=0):
-    with open(filename,'r') as in_file:
-        data, indices, indptr = [],[],[0]
-
-        labels = []
-        ptr = 0
-
-        for line in in_file:
-            line = line.split(None, 1)
-            if len(line) == 1: 
-                line += ['']
-            label = line[y_pos]
-            features = line[-1-y_pos]
-            labels.append(float(label))
-
-            f_list = features.split()
-            for f in f_list:
-
-                k,v = f.split(':')
-                data.append(float(v))
-                indices.append(float(k)-1)
-
-            ptr += len(f_list)
-            indptr.append(ptr)
-
-        return csr_matrix((data, indices, indptr)), np.asarray(labels)
-
-def load_sparse_dataset(name, y_pos=0):
-
-    x, y = load_csr_matrix(name, y_pos)
-
-    return scale(x, with_mean=False), y
-
-def load_dense_dataset(name, y_pos=0):
-
-    x, y = load_sparse_dataset(name, y_pos)
-
-    return x.toarray(), y
 
 # --------------------------------------------------------------- cross-validation
 
@@ -380,3 +247,5 @@ def compute_adjacencies(clfs, n, sigma=0.1):
     adjacency = get_adj_matrix(similarities)
 
     return adjacency, similarities
+
+# ----------------------------------------------------------------------------- ARG PARSER

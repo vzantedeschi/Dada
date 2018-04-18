@@ -41,7 +41,7 @@ def gac_routine(vectors, nodes, nb_iter):
 
     return new_vectors
 
-def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None):
+def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, monitors=None):
 
     results = []
     
@@ -50,7 +50,7 @@ def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None)
         n.init_matrices(base_clfs)
 
     results.append({})  
-    for k, call in callbacks.items():
+    for k, call in monitors.items():
         results[0][k] = call[0](nodes, *call[1])
     results[0]["duality-gap"] = 0
 
@@ -81,7 +81,7 @@ def lafond_FW(nodes, base_clfs, nb_iter=1, beta=None, c1=5, t=1, callbacks=None)
             n.set_alpha(a)
 
         results.append({})  
-        for k, call in callbacks.items():
+        for k, call in monitors.items():
             results[i+1][k] = call[0](nodes, *call[1])
         results[i+1]["duality-gap"] = sum(duals)
 
@@ -139,20 +139,20 @@ def compute_graph_matrices(n, adjacency, similarities):
 
     return L, d
 
-def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similarities, max_samples_per_node=20, checkevery=1):
+def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similarities, mu=1, max_samples_per_node=20, checkevery=1):
 
     results = []
-    alpha = 0.5
+    alpha = 1 / (1 + mu)
     L, d = compute_graph_matrices(nb_nodes, adjacency, similarities)
 
     theta = np.zeros((nb_nodes, dim))
-    results.append({"accuracy": (class_ratio(theta, x, y), class_ratio(theta, x_test, y_test))})
+    results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
     
     # Collaborative learning
     for t in range(nb_iter):
         theta -= cost_function_gradient(L, d, theta, x, y, alpha, max_samples_per_node)
 
         if t % checkevery == 0:
-            results.append({"accuracy": (class_ratio(theta, x, y), class_ratio(theta, x_test, y_test))})
+            results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
 
     return results, theta

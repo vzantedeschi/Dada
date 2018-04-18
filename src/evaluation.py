@@ -1,3 +1,5 @@
+import warnings
+
 from math import log
 import numpy as np
 
@@ -19,12 +21,17 @@ def loss(nodes, *args):
 def central_loss(nodes, *args):
     return log(np.mean(np.concatenate([n.compute_weights(distr=False) for n in nodes])))
 
-def accuracies(nodes, *args):
-    """ returns train accuracies, test accuracies
-    """
+def train_accuracies(nodes, *args):
+    """ returns training accuracies per node"""
     train_acc = []
+
     for n in nodes:
         train_acc.append(accuracy_score(n.predict(n.sample), n.labels))
+
+    return train_acc
+
+def test_accuracies(nodes, *args):
+    """ returns testing accuracies per node"""
 
     test_acc = []
     try:
@@ -33,31 +40,12 @@ def accuracies(nodes, *args):
             test_acc.append(accuracy_score(n.predict(n.test_sample), n.test_labels))
 
     except:
-        pass
+        warnings.warn("Test sets not set in nodes.")
+        
+    return test_acc
 
-    return train_acc, test_acc
-
-def mean_accuracy(nodes, *args):
-    """ returns mean train accuracy, mean test accuracy
-    """
-    train_acc = []
-    for n in nodes:
-        train_acc.append(accuracy_score(n.predict(n.sample), n.labels))
-    mean_train_acc = np.mean(train_acc)
-
-    try:
-        test_acc = []
-        for n in nodes:
-            test_acc.append(accuracy_score(n.predict(n.test_sample), n.test_labels))
-        mean_test_acc = np.mean(test_acc)
-    except:
-        mean_test_acc = None
-
-    return mean_train_acc, mean_test_acc
-
-def central_accuracy(nodes, *args):
-    """ returns train accuracy, test accuracy
-    """
+def central_train_accuracy(nodes, *args):
+    """ returns training accuracy """
 
     predictions, labels = [], []
     for n in nodes:
@@ -65,6 +53,11 @@ def central_accuracy(nodes, *args):
         labels.append(n.labels)
 
     train_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
+
+    return train_acc
+
+def central_test_accuracy(nodes, *args):
+    """ returns testing accuracy """
 
     try:
         predictions, labels = [], []
@@ -74,15 +67,16 @@ def central_accuracy(nodes, *args):
         
         test_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
 
-    except:
-        test_acc = None
+        return test_acc
 
-    return train_acc, test_acc
+    except:
+        warnings.warn("Test sets not set in nodes.")
+        return None
 
 # -------------------------------------------------------------------------------  BASELINE
 
 def best_accuracy(nodes):
-
+    """ returns both training and testing accuracies """
     best_clf = GradientBoostingClassifier()
 
     predictions, labels = [], []

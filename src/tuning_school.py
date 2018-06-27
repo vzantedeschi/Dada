@@ -23,7 +23,7 @@ STEP = 1000
 # BETA_LIST = [1]
 # STEP_LIST = [10]
 
-X, Y, _, _, N, max_nb_instances = load_school()
+X, Y, _, _, N, max_nb_instances = load_school(thr=20)
 D = X[0].shape[1]
 
 results = {}.fromkeys(itertools.product(MU_LIST, BETA_LIST), 0.)

@@ -264,6 +264,26 @@ def graph(x, y, x_test, y_test, nb_nodes, adj_matrix, similarities, max_nb_insta
 
     return nodes
 
+def null_graph(x, y, x_test, y_test, nb_nodes, max_nb_instances):
+
+    nodes = list()
+
+    for i in range(nb_nodes):
+
+        # add offset
+        M, _ = x[i].shape
+        x_copy = np.c_[x[i], np.ones(M)]
+        M, _ = x_test[i].shape
+        x_test_copy = np.c_[x_test[i], np.ones(M)]
+
+        n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
+        nb_instances = len(x[i])
+        n.confidence = nb_instances / max_nb_instances
+
+        nodes.append(n)
+
+    return nodes
+
 def true_theta_graph(nodes, theta_true):
 
     new_graph = list()

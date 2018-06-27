@@ -76,6 +76,51 @@ def rotate(v1, v2):
 
 DATASET_PATH = os.path.join("datasets")
 
+def load_school(path=DATASET_PATH, thr=35):
+    from scipy.io import loadmat
+
+    DIR = os.path.join(path, "school_splits")
+    dataset = loadmat(os.path.join(DIR, "school_b.mat"))
+    splits = loadmat(os.path.join(DIR, "school_1_indexes.mat"))
+
+    scores, features = dataset["y"].squeeze(), dataset["x"].T
+    tr_points, tr_indexes = splits["tr"].astype(int), splits["tr_indexes"].squeeze().astype(int)
+    ts_points, ts_indexes = splits["tst"].astype(int), splits["tst_indexes"].squeeze().astype(int)
+
+    train = features[tr_points-1]
+    test = features[ts_points-1]
+
+    x_train, y_train = [], []
+    x_test, y_test = [], []
+
+    end_train = tr_indexes[0] - 1
+    end_test = ts_indexes[0] - 1
+
+    max_nb_instances = 0
+
+    for i in range(1, 140):
+
+        start_train = end_train
+        start_test = end_test
+
+        try:
+            end_train = tr_indexes[i] - 1
+            end_test = ts_indexes[i] - 1
+
+        except:
+            end_train = -1
+            end_test = -1
+
+        x_train.append(features[start_train:end_train])
+        y_train.append((scores[start_train:end_train] > thr) * 2 - 1) 
+
+        x_test.append(features[start_test:end_test])
+        y_test.append((scores[start_test:end_test] > thr) * 2 - 1) 
+
+        max_nb_instances = max(max_nb_instances, len(x_train[-1]))
+
+    return x_train, y_train, x_test, y_test, 139, max_nb_instances
+
 def load_mobiact(path=DATASET_PATH):
 
     import pandas as pd

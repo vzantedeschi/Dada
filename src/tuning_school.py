@@ -11,14 +11,14 @@ from utils import load_school, get_split_per_list, get_min_max
 
 load_school(thr=20)
 # set graph of nodes with local personalized data
-NB_ITER = 200
-B = 300
+NB_ITER = 10000
+B = 200
 random_state = 2018
 
 CV_SPLITS = 3
 MU_LIST = [10**i for i in range(-3, 4)]
-BETA_LIST = [10**i for i in range(5)]
-STEP_LIST = list(range(10, 80, 10))
+BETA_LIST = [10**i for i in range(3)]
+STEP = 1000
 # MU_LIST = [1]
 # BETA_LIST = [1]
 # STEP_LIST = [10]
@@ -48,14 +48,12 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
         for beta in BETA_LIST:
 
-            for step in STEP_LIST:
+            print(mu, beta)
 
-                print(mu, beta, step)
+            init_w = np.eye(N)
+            nodes_copy = deepcopy(nodes)
+            gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": STEP, "args":(8)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
 
-                init_w = np.eye(N)
-                nodes_copy = deepcopy(nodes)
-                gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": step, "args":(1)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
-
-                results[(mu, beta)] += central_test_accuracy(nodes_copy)
+            results[(mu, beta)] += central_test_accuracy(nodes_copy)
 
 print("best mu, beta:", max(results, key=results.get))

@@ -6,6 +6,8 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 
+from classification import RandomClassifier
+
 def edges(nodes, *args):
     try:
         return [len(n.neighbors) for n in nodes]
@@ -73,6 +75,7 @@ def central_test_accuracy(nodes, *args):
         warnings.warn("Test sets not set in nodes.")
         return None
 
+
 # -------------------------------------------------------------------------------  BASELINE
 
 def best_accuracy(nodes):
@@ -91,7 +94,6 @@ def best_accuracy(nodes):
     try:
         predictions, labels = [], []
         for n in nodes:
-            best_clf.fit(n.sample, n.labels)
             predictions.append(best_clf.predict(n.test_sample))
             labels.append(n.test_labels)
         
@@ -101,3 +103,29 @@ def best_accuracy(nodes):
         best_test_acc = None
 
     return best_train_acc, best_test_acc
+
+
+def random_accuracy(nodes, *args):
+
+    clf = RandomClassifier()
+
+    predictions, labels = [], []
+
+    for n in nodes:
+        predictions.append(clf.predict(n.sample))
+        labels.append(n.labels)
+
+    train_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
+
+    try:
+        predictions, labels = [], []
+        for n in nodes:
+            predictions.append(clf.predict(n.test_sample))
+            labels.append(n.test_labels)
+        
+        test_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
+
+    except:
+        test_acc = None
+
+    return train_acc, test_acc

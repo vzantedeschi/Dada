@@ -80,10 +80,15 @@ def load_school(path=DATASET_PATH, thr=35):
     from scipy.io import loadmat
 
     DIR = os.path.join(path, "school_splits")
+    STUDENT_FTS = np.r_[0:3,5:21,27]
+
     dataset = loadmat(os.path.join(DIR, "school_b.mat"))
     splits = loadmat(os.path.join(DIR, "school_1_indexes.mat"))
 
-    scores, features = dataset["y"].squeeze(), dataset["x"].T
+    indexes, scores, features = dataset["task_indexes"].astype(int), dataset["y"].squeeze(), dataset["x"]
+
+    features = features[STUDENT_FTS].T
+
     tr_points, tr_indexes = splits["tr"].astype(int), splits["tr_indexes"].squeeze().astype(int)
     ts_points, ts_indexes = splits["tst"].astype(int), splits["tst_indexes"].squeeze().astype(int)
 

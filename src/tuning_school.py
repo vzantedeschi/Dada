@@ -10,14 +10,14 @@ from optimization import gd_reg_local_FW
 from utils import load_school, get_split_per_list, get_min_max
 
 # set graph of nodes with local personalized data
-NB_ITER = 2000
-B = 200
+NB_ITER = 5000
+B = 60
 random_state = 2018
 
 CV_SPLITS = 3
 MU_LIST = [10**i for i in range(-3, 4)]
 BETA_LIST = [10**i for i in range(3)]
-STEP = 100
+STEP = 50
 # MU_LIST = [1]
 # BETA_LIST = [1]
 

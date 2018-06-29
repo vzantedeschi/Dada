@@ -93,14 +93,17 @@ def load_school(path=DATASET_PATH, thr=35, split=1):
     from scipy.io import loadmat
 
     DIR = os.path.join(path, "school_splits")
-    STUDENT_FTS = np.r_[0:3,5:21,27]
+    # STUDENT_FTS = np.r_[0:3,5:21,27]
 
     dataset = loadmat(os.path.join(DIR, "school_b.mat"))
     splits = loadmat(os.path.join(DIR, "school_{}_indexes.mat".format(split)))
 
-    indexes, scores, features = dataset["task_indexes"].astype(int), dataset["y"].squeeze(), dataset["x"]
+    indexes, scores, features = dataset["task_indexes"].astype(int), dataset["y"].squeeze(), dataset["x"].astype(float).T
 
-    features = features[STUDENT_FTS].T
+    scaler = MinMaxScaler()
+    features = scaler.fit_transform(features)
+
+    # features = features.T
 
     tr_points, tr_indexes = splits["tr"].astype(int), splits["tr_indexes"].squeeze().astype(int)
     ts_points, ts_indexes = splits["tst"].astype(int), splits["tst_indexes"].squeeze().astype(int)

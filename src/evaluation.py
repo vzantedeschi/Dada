@@ -94,6 +94,7 @@ def best_accuracy(nodes):
     try:
         predictions, labels = [], []
         for n in nodes:
+            best_clf.fit(n.sample, n.labels)
             predictions.append(best_clf.predict(n.test_sample))
             labels.append(n.test_labels)
         

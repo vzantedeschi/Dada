@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from classification import get_double_basis
 from network import centralize_data, set_edges
-from utils import square_root_matrix, get_adj_matrix
+from utils import square_root_matrix, get_adj_matrix, stack_results
 
 """
 Boosting algorithms using Frank Wolfe optimization
@@ -193,7 +193,7 @@ def global_reg_frank_wolfe(nodes, gamma, alpha0, beta=None, t=1):
 
 # --------------------------------------------------------------------- local learning
 
-def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
+def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None, checkevery=1):
 
     results = []
     
@@ -201,12 +201,8 @@ def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
     for n in nodes:
         n.init_matrices(base_clfs)
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
 
-    
     # frank-wolfe
     for t in range(nb_iter):
 
@@ -214,10 +210,8 @@ def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta))
 
-        results.append({})  
-        for k, call in monitors.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        if t % checkevery == 0:
+            stack_results(nodes, results, dual_gap, monitors)
 
     return results
 
@@ -230,10 +224,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors
         n.init_matrices(base_clfs)
     alpha0 = np.zeros((len(base_clfs), 1))
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
     
     # frank-wolfe
     for t in range(nb_iter):
@@ -242,10 +233,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors
 
         dual_gap, alpha0 = global_reg_frank_wolfe(nodes, gamma, alpha0, beta=beta, t=1)
 
-        results.append({})  
-        for k, call in monitors.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        stack_results(nodes, results, dual_gap, monitors)
 
     return results
 
@@ -289,10 +277,7 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
     for n in nodes:
         n.init_matrices(base_clfs)
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
 
     duals = [0] * N
 
@@ -310,10 +295,7 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
         frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
 
         if t % checkevery == 0:
-            results.append({})  
-            for k, call in monitors.items():
-                results[len(results)-1][k] = call[0](nodes, *call[1])
-            results[len(results)-1]["duality-gap"] = sum(duals)
+            stack_results(nodes, results, sum(duals), monitors)
 
     return results
 
@@ -335,10 +317,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
     adj_matrix = get_adj_matrix(init_w, 1e-3)
     set_edges(nodes, init_w, adj_matrix)
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
 
     duals = [0] * N
 
@@ -359,10 +338,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
         dual_gap = sum(duals)
 
         if t % checkevery == 0:
-            results.append({})  
-            for k, call in monitors.items():
-                results[len(results)-1][k] = call[0](nodes, *call[1])
-            results[len(results)-1]["duality-gap"] = dual_gap
+            stack_results(nodes, results, dual_gap, monitors)
 
         resettable_t += 1
 
@@ -439,10 +415,7 @@ def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, monitors=
     for n in nodes:
         n.init_matrices(base_clfs)
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
 
     # frank-wolfe
     for t in range(nb_iter):
@@ -464,14 +437,11 @@ def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, monitors=
         for n, a in zip(nodes, new_alphas):
             n.set_alpha(a)
 
-        results.append({})  
-        for k, call in monitors.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        stack_results(nodes, results, dual_gap, monitors)
 
     return results
 
-def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
+def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None, checkevery=1):
 
     results = []
 
@@ -480,10 +450,7 @@ def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
     list_node = [node]
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](list_node, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(list_node, results, 0, monitors)
 
     # frank-wolfe
     for t in range(nb_iter):
@@ -492,10 +459,8 @@ def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
         dual_gap = sum(one_frank_wolfe_round(list_node, gamma, beta))
 
-        results.append({})  
-        for k, call in monitors.items():
-            results[t+1][k] = call[0](list_node, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        if t % checkevery == 0:
+            stack_results(list_node, results, dual_gap, monitors)
 
     final_alpha = list_node[0].alpha
     for n in nodes:

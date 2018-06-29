@@ -38,6 +38,19 @@ def dict_to_csv(my_dict, header, filename):
         for key, value in my_dict.items():
             writer.writerow([key, value])
 
+# --------------------------------------------------------------------------------- MONITORS
+
+def stack_results(nodes, results, dual, monitors):
+    """ modify results! """
+
+    t = len(results)
+    results.append({})  
+
+    for k, call in monitors.items():
+        results[t][k] = call[0](nodes, *call[1])
+    results[t]["duality-gap"] = dual
+
+
 # --------------------------------------------------------------------- ARRAY ROUTINES
 def get_min_max(sample):
     
@@ -76,14 +89,14 @@ def rotate(v1, v2):
 
 DATASET_PATH = os.path.join("datasets")
 
-def load_school(path=DATASET_PATH, thr=35):
+def load_school(path=DATASET_PATH, thr=35, split=1):
     from scipy.io import loadmat
 
     DIR = os.path.join(path, "school_splits")
     STUDENT_FTS = np.r_[0:3,5:21,27]
 
     dataset = loadmat(os.path.join(DIR, "school_b.mat"))
-    splits = loadmat(os.path.join(DIR, "school_1_indexes.mat"))
+    splits = loadmat(os.path.join(DIR, "school_{}_indexes.mat".format(split)))
 
     indexes, scores, features = dataset["task_indexes"].astype(int), dataset["y"].squeeze(), dataset["x"]
 
@@ -275,6 +288,8 @@ def get_split_per_list(x, nb_splits, shuffle=True, rnd_state=None):
     for _ in range(nb_splits):
 
         yield [next(s.split(x[i])) for i, s in enumerate(splitters)]
+
+# ----------------------------------------------------------------------- SYNTHETIC DATASETS
 
 # code adapted from https://gitlab.inria.fr/magnet/decentralizedpaper/blob/master/notebooks/basic_data_generation.ipynb
 def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2), normalize_centroids=False, random_state=1):

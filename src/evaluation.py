@@ -129,3 +129,35 @@ def random_accuracy(nodes, *args):
         test_acc = None
 
     return train_acc, test_acc
+
+def maj_class_accuracy(nodes, *args):
+
+    labels = []
+
+    for n in nodes:
+        labels += n.labels.tolist()
+
+    plus_points = labels.count(1)
+    minus_points = labels.count(-1)
+
+    if plus_points > minus_points:
+        train_acc = plus_points / (plus_points + minus_points)
+        plus = True
+    else:
+        train_acc = minus_points / (plus_points + minus_points)
+        plus = False
+
+    try:
+        labels = []
+        for n in nodes:
+            labels += n.test_labels.tolist()
+        
+        if plus:
+            test_acc = labels.count(1) / len(labels)
+        else:
+            test_acc = labels.count(-1) / len(labels)
+
+    except:
+        test_acc = None
+
+    return train_acc, test_acc

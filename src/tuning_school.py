@@ -11,7 +11,7 @@ from utils import load_school, get_split_per_list, get_min_max
 
 # set graph of nodes with local personalized data
 NB_ITER = 5000
-B = 60
+B = 29
 random_state = 2018
 
 CV_SPLITS = 3
@@ -38,7 +38,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
     vmin, vmax = get_min_max(train_x)
     base_clfs = get_stumps(n=B, d=D, min_v=vmin, max_v=vmax)
-
+    print(len(base_clfs))
     # get nodes
     nodes = null_graph(train_x, train_y, test_x, test_y, N, max_nb_instances)
 

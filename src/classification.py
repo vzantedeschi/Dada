@@ -71,16 +71,17 @@ def get_double_basis(n, d, *args):
 
 def get_stumps(n, d, min_v, max_v):
 
+    per_d = (n + d - 1) // d
     # get nb_clfs/dimensions regular thresholds
-    interval = (max_v - min_v) * d / (n + 1)
-    thresholds = [min_v + (i+1)*interval for i in range(n//d + 1)]
+    interval = (max_v - min_v) / per_d
+    thresholds = [min_v + (i+1)*interval for i in range(per_d)]
 
     base_clfs = []
 
     for j in range(d): 
         base_clfs += [StumpClassifier(j, t, 1) for t in thresholds]
 
-    return random.sample(base_clfs, n)
+    return base_clfs
 
 def get_rnd_linear_clfs(n, d, rnd_seed, *args):
     assert n % 2 == 0
@@ -104,20 +105,17 @@ def get_scipy_selected_stumps(x, y, d):
 
     # estimators per node
     nb_nodes = len(x)
-    nb_estimators = [d // nb_nodes for i in x]
-    nb_estimators[0] += d - sum(nb_estimators)
+    per_d = (d + nb_nodes - 1) // nb_nodes
+    nb_estimators = [per_d] * nb_nodes
 
     for x_node, y_node, e in zip(x, y, nb_estimators):
 
         M, _ = x_node.shape
-        x_copy = np.c_[x_node, np.ones(M)]
 
         adaboosted_clf = AdaBoostClassifier(base_estimator=dt_stump, n_estimators=e)
-        adaboosted_clf.fit(x_copy, y_node)
+        adaboosted_clf.fit(x_node, y_node)
 
         ada_clfs.append(adaboosted_clf)
         base_clfs += adaboosted_clf.estimators_
-
-    assert len(base_clfs) == d
 
     return base_clfs, ada_clfs

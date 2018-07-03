@@ -89,11 +89,15 @@ def rotate(v1, v2):
 
 DATASET_PATH = os.path.join("datasets")
 
-def load_school(path=DATASET_PATH, thr=35, split=1):
+def load_school(path=DATASET_PATH, thr=35, split=1, moy=True):
+    """ if moy is True, school attributes are averaged over the three years, otherwise
+    139 x 3 tasks are created instead (a task = a school per year) """
     from scipy.io import loadmat
 
     DIR = os.path.join(path, "school_splits")
-    # STUDENT_FTS = np.r_[0:3,5:21,27]
+    STUDENT_FTS = np.r_[5:21,27]
+    SCHOOL_FTS = np.r_[3:5,21:27]
+    YEAR = np.r_[0:3]
 
     dataset = loadmat(os.path.join(DIR, "school_b.mat"))
     splits = loadmat(os.path.join(DIR, "school_{}_indexes.mat".format(split)))
@@ -105,11 +109,13 @@ def load_school(path=DATASET_PATH, thr=35, split=1):
 
     # features = features.T
 
-    tr_points, tr_indexes = splits["tr"].astype(int), splits["tr_indexes"].squeeze().astype(int)
-    ts_points, ts_indexes = splits["tst"].astype(int), splits["tst_indexes"].squeeze().astype(int)
+    tr_points, tr_indexes = splits["tr"].squeeze().astype(int), splits["tr_indexes"].squeeze().astype(int)
+    ts_points, ts_indexes = splits["tst"].squeeze().astype(int), splits["tst_indexes"].squeeze().astype(int)
 
-    train = features[tr_points-1]
-    test = features[ts_points-1]
+    train_fts = features[tr_points-1]
+    train_sc = scores[tr_points-1]
+    test_fts = features[ts_points-1]
+    test_sc = scores[ts_points-1]
 
     x_train, y_train = [], []
     x_test, y_test = [], []
@@ -118,6 +124,8 @@ def load_school(path=DATASET_PATH, thr=35, split=1):
     end_test = ts_indexes[0] - 1
 
     max_nb_instances = 0
+
+    tasks = []
 
     for i in range(1, 140):
 
@@ -132,13 +140,19 @@ def load_school(path=DATASET_PATH, thr=35, split=1):
             end_train = -1
             end_test = -1
 
-        x_train.append(features[start_train:end_train])
-        y_train.append((scores[start_train:end_train] > thr) * 2 - 1) 
+        x_train.append(train_fts[start_train:end_train])
+        y_train.append((train_sc[start_train:end_train] > thr) * 2 - 1) 
 
-        x_test.append(features[start_test:end_test])
-        y_test.append((scores[start_test:end_test] > thr) * 2 - 1) 
+        x_test.append(test_fts[start_test:end_test])
+        y_test.append((test_sc[start_test:end_test] > thr) * 2 - 1) 
 
         max_nb_instances = max(max_nb_instances, len(x_train[-1]))
+
+        # tasks.append(features[])
+
+    # user_distances = pairwise_distances(scaled_users)
+
+    # adjacency = get_adj_matrix(user_distances)
 
     return x_train, y_train, x_test, y_test, 139, max_nb_instances
 

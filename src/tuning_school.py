@@ -11,14 +11,14 @@ from utils import load_school, get_split_per_list, get_min_max
 
 # set graph of nodes with local personalized data
 NB_ITER = 5000
-B = 29
+B = 112
 random_state = 2018
 
 CV_SPLITS = 3
 MU_LIST = [10**i for i in range(-3, 4)]
 BETA_LIST = [10**i for i in range(3)]
 STEP = 50
-# MU_LIST = [1]
+# MU_LIST = [0.1]
 # BETA_LIST = [1]
 
 X, Y, _, _, N, max_nb_instances = load_school(thr=20)
@@ -53,5 +53,6 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
             gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": STEP, "args":(8)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
 
             results[(mu, beta)] += central_test_accuracy(nodes_copy)
+
 
 print("best mu, beta:", max(results, key=results.get))

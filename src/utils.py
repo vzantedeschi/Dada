@@ -8,6 +8,7 @@ import os
 
 from scipy.sparse import csr_matrix
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine, make_moons
+from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import normalize, scale, MinMaxScaler
@@ -96,8 +97,7 @@ def load_school(path=DATASET_PATH, thr=35, split=1, moy=True):
 
     DIR = os.path.join(path, "school_splits")
     STUDENT_FTS = np.r_[5:21,27]
-    SCHOOL_FTS = np.r_[3:5,21:27]
-    YEAR = np.r_[0:3]
+    SCHOOL_YEAR_FTS = np.r_[:5,21:27]
 
     dataset = loadmat(os.path.join(DIR, "school_b.mat"))
     splits = loadmat(os.path.join(DIR, "school_{}_indexes.mat".format(split)))
@@ -140,26 +140,26 @@ def load_school(path=DATASET_PATH, thr=35, split=1, moy=True):
             end_train = -1
             end_test = -1
 
-        x_train.append(train_fts[start_train:end_train])
+        x_train.append(train_fts[start_train:end_train][:, STUDENT_FTS])
         y_train.append((train_sc[start_train:end_train] > thr) * 2 - 1) 
 
-        x_test.append(test_fts[start_test:end_test])
+        x_test.append(test_fts[start_test:end_test][:, STUDENT_FTS])
         y_test.append((test_sc[start_test:end_test] > thr) * 2 - 1) 
 
         max_nb_instances = max(max_nb_instances, len(x_train[-1]))
 
-        # tasks.append(features[])
+        task_fts = np.unique(train_fts[start_train:end_train][:, SCHOOL_YEAR_FTS], axis=0)
+        tasks.append(np.mean(task_fts[:, 3:], axis=0))
 
-    # user_distances = pairwise_distances(scaled_users)
+    task_distances = pairwise_distances(tasks)
 
-    # adjacency = get_adj_matrix(user_distances)
+    adjacency = get_adj_matrix(task_distances)
 
-    return x_train, y_train, x_test, y_test, 139, max_nb_instances
+    return x_train, y_train, x_test, y_test, adjacency, task_distances, len(task_distances), max_nb_instances
 
 def load_mobiact(path=DATASET_PATH):
 
     import pandas as pd
-    from sklearn.metrics.pairwise import pairwise_distances
 
     USER_FILE = os.path.join(path, "Mobi_Users.csv")
     SETS_DIR = os.path.join(path, "Mobi_Generated") 

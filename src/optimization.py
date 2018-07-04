@@ -41,7 +41,7 @@ def graph_discovery_sparse(nodes, k=1, *args):
     result = prob.solve()
 
     res = np.asarray(x.value)
-    assert np.allclose(res, res.T)
+    # assert np.allclose(res, res.T)
 
     # drop insignificant edges
     res[res < 1/N] = 0.

@@ -10,14 +10,17 @@ from optimization import gd_reg_local_FW, regularized_local_FW
 from utils import load_school, get_split_per_list, get_min_max
 
 # set graph of nodes with local personalized data
-NB_ITER = 5000
+
+NB_ITER = 10000
 B = 112
 random_state = 2018
 
 CV_SPLITS = 3
 MU_LIST = [10**i for i in range(-3, 4)]
 BETA_LIST = [10**i for i in range(3)]
+
 # STEP = 50
+# Q = 8
 # MU_LIST = [0.1]
 # BETA_LIST = [1]
 
@@ -51,7 +54,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
             init_w = np.eye(N)
             nodes_copy = deepcopy(nodes)
-            # gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": STEP, "args":(8)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
+            # gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": STEP, "args":(Q)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
             regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, monitors={})
 
             results[(mu, beta)] += central_test_accuracy(nodes_copy)

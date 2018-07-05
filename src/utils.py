@@ -90,65 +90,76 @@ def rotate(v1, v2):
 
 DATASET_PATH = os.path.join("datasets")
 
-def load_school(path=DATASET_PATH, thr=35, split=1, moy=True):
-    """ if moy is True, school attributes are averaged over the three years, otherwise
-    139 x 3 tasks are created instead (a task = a school per year) """
+def load_school(path=DATASET_PATH, train_ratio=0.25, thr=20, rnd_state=2018):
+
     from scipy.io import loadmat
+
+    rng = np.random.RandomState(rnd_state)
 
     DIR = os.path.join(path, "school_splits")
     STUDENT_FTS = np.r_[5:21,27]
     SCHOOL_YEAR_FTS = np.r_[:5,21:27]
 
     dataset = loadmat(os.path.join(DIR, "school_b.mat"))
-    splits = loadmat(os.path.join(DIR, "school_{}_indexes.mat".format(split)))
+    # splits = loadmat(os.path.join(DIR, "school_{}_indexes.mat".format(split)))
 
-    indexes, scores, features = dataset["task_indexes"].astype(int), dataset["y"].squeeze(), dataset["x"].astype(float).T
+    indexes, scores, features = dataset["task_indexes"].squeeze().astype(int), dataset["y"].squeeze(), dataset["x"].astype(float).T
 
     scaler = MinMaxScaler()
     features = scaler.fit_transform(features)
 
     # features = features.T
 
-    tr_points, tr_indexes = splits["tr"].squeeze().astype(int), splits["tr_indexes"].squeeze().astype(int)
-    ts_points, ts_indexes = splits["tst"].squeeze().astype(int), splits["tst_indexes"].squeeze().astype(int)
+    # tr_points, tr_indexes = splits["tr"].squeeze().astype(int), splits["tr_indexes"].squeeze().astype(int)
+    # ts_points, ts_indexes = splits["tst"].squeeze().astype(int), splits["tst_indexes"].squeeze().astype(int)
 
-    train_fts = features[tr_points-1]
-    train_sc = scores[tr_points-1]
-    test_fts = features[ts_points-1]
-    test_sc = scores[ts_points-1]
+    # train_fts = features[tr_points-1]
+    # train_sc = scores[tr_points-1]
+    # test_fts = features[ts_points-1]
+    # test_sc = scores[ts_points-1]
 
     x_train, y_train = [], []
     x_test, y_test = [], []
 
-    end_train = tr_indexes[0] - 1
-    end_test = ts_indexes[0] - 1
+    # end_train = tr_indexes[0] - 1
+    # end_test = ts_indexes[0] - 1
 
+    end = indexes[0] - 1
     max_nb_instances = 0
 
     tasks = []
 
     for i in range(1, 140):
 
-        start_train = end_train
-        start_test = end_test
+        # start_train = end_train
+        # start_test = end_test
+        start = end
 
         try:
-            end_train = tr_indexes[i] - 1
-            end_test = ts_indexes[i] - 1
-
+            # end_train = tr_indexes[i] - 1
+            # end_test = ts_indexes[i] - 1
+            end = indexes[i] - 1
         except:
-            end_train = -1
-            end_test = -1
+            # end_train = -1
+            # end_test = -1
+            end = -1
 
-        x_train.append(train_fts[start_train:end_train][:, STUDENT_FTS])
-        y_train.append((train_sc[start_train:end_train] > thr) * 2 - 1) 
+        fts = features[start:end]
+        task_nb_points = fts.shape[0]
+        task_nb_train = int(train_ratio * task_nb_points)
 
-        x_test.append(test_fts[start_test:end_test][:, STUDENT_FTS])
-        y_test.append((test_sc[start_test:end_test] > thr) * 2 - 1) 
+        task_ids = rng.permutation(task_nb_points)
+        train_ids, test_ids = task_ids[:task_nb_train], task_ids[task_nb_train:]
+
+        x_train.append(fts[train_ids][:, STUDENT_FTS])
+        y_train.append((scores[train_ids + start] > thr) * 2 - 1) 
+
+        x_test.append(fts[test_ids][:, STUDENT_FTS])
+        y_test.append((scores[test_ids + start] > thr) * 2 - 1) 
 
         max_nb_instances = max(max_nb_instances, len(x_train[-1]))
 
-        task_fts = np.unique(train_fts[start_train:end_train][:, SCHOOL_YEAR_FTS], axis=0)
+        task_fts = np.unique(fts[train_ids][:, SCHOOL_YEAR_FTS], axis=0)
         tasks.append(np.mean(task_fts[:, 3:], axis=0))
 
     task_distances = pairwise_distances(tasks)

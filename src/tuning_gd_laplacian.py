@@ -4,7 +4,7 @@ import numpy as np
 from statistics import mean
 
 from classification import get_stumps
-from evaluation import central_accuracy
+from evaluation import central_test_accuracy
 from network import synthetic_graph
 from optimization import gd_reg_local_FW
 from utils import generate_models, generate_moons, get_split_per_list, get_min_max
@@ -18,14 +18,19 @@ NOISE_R = 0.05
 random_state = 2017
 
 CV_SPLITS = 3
-MU_LIST = [10**i for i in range(-3, 4)]
-BETA_LIST = [10**i for i in range(5)]
+# MU_LIST = [10**i for i in range(-3, 4)]
+# BETA_LIST = [10**i for i in range(5)]
 STEP_LIST = list(range(10, 80, 10))
+MU = 0.1
+BETA = 10
+A_LIST = [10**i for i in range(0, 4)]
+B_LIST = [10**i for i in range(0, 4)]
+
 
 V, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=N, random_state=random_state)
 _, X, Y, _, _, max_nb_instances = generate_moons(V, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
 
-results = {}.fromkeys(itertools.product(MU_LIST, BETA_LIST), 0.)
+results = {}.fromkeys(itertools.product(A_LIST, B_LIST), 0.)
 
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
@@ -42,19 +47,20 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
     # set graph
     nodes, _, _ = synthetic_graph(train_x, train_y, test_x, test_y, V, theta_true, max_nb_instances)
+    init_w = np.eye(N)
 
-    for mu in MU_LIST:
+    for a in A_LIST:
 
-        for beta in BETA_LIST:
+        for b in B_LIST:
 
             for step in STEP_LIST:
 
-                print(mu, beta, step)
+                print(a, b, step)
 
                 nodes_copy = deepcopy(nodes)
-                gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"laplacian", "pace_gd": step, "args":(1)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, callbacks={})
+                gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"kalo", "pace_gd": step, "args":(a, b)}, init_w=init_w, beta=BETA, mu=MU, nb_iter=NB_ITER, reset_step=False, monitors={})
 
-                results[(mu, beta)] += central_accuracy(nodes_copy)[1]
+                results[(a, b)] += central_test_accuracy(nodes_copy)
 
 
-print("best mu, beta:", max(results, key=results.get))
+print("best a, b:", max(results, key=results.get))

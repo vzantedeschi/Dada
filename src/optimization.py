@@ -2,10 +2,12 @@ import cvxpy as cvx
 import numpy as np
 from random import randint
 
+from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.neighbors import NearestNeighbors
 
 from classification import get_double_basis
-from network import centralize_data, set_edges
+from kalofolias import euclidean_proj_simplex
+from network import centralize_data, set_edges, get_alphas
 from utils import square_root_matrix, get_adj_matrix, stack_results
 
 """
@@ -14,17 +16,7 @@ Boosting algorithms using Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def graph_discovery(nodes, *args):
-
-    alpha = np.hstack([n.alpha for n in nodes])
-
-    laplacian = square_root_matrix(np.dot(alpha.T, alpha))
-
-    laplacian /= np.trace(laplacian)
-
-    return (np.eye(len(nodes))-laplacian).clip(min=0)
-
-def graph_discovery_sparse(nodes, k=1, *args):
+def graph_discovery(nodes, k=1, *args):
     
     N = len(nodes)
 
@@ -48,53 +40,54 @@ def graph_discovery_sparse(nodes, k=1, *args):
 
     return res
 
-def graph_discovery_knn(nodes, k=10, *args):
+def kalo_graph_discovery(nodes, a=1, b=1, *args):
 
-    N = len(nodes)
+    n = len(nodes)
+    n_pairs = int(n * (n - 1) / 2)
 
-    alpha = np.hstack([n.alpha for n in nodes])
+    z = pairwise_distances(np.hstack(get_alphas(nodes)))**2
+    z = z[np.triu_indices(n, 1)]
 
-    x = cvx.Variable(N, N)
+    # construct mapping matrix from 2D index to 1D index for convenience
+    map_idx = np.ones((n, n), dtype=int)
+    k = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            map_idx[i, j] = k
+            k += 1
 
-    # set node degrees to 1
-    objective = cvx.Minimize(cvx.trace(alpha * (np.eye(N) - x) * alpha.T))
-    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.sum_entries(x, axis=1) == np.ones(N), cvx.sum_entries(x, axis=0) == np.ones((1,N))]
+    # Construct linear transformation matrix mapping weight vector to degree vector
+    S = np.zeros((n, n_pairs))
+    for i in range(n):
+        for j in range(n):
+            if j != i:
+                S[i, map_idx[min(i, j), max(i, j)]] = 1
 
-    prob = cvx.Problem(objective, constraints)
-    result = prob.solve()   
+    gamma = 1 / (2 * np.linalg.norm(z) + a * np.linalg.norm(S.T.dot(S)) + 2 * b)
 
-    graph_sim = np.asarray(x.value).clip(min=0)
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(1 - graph_sim)
+    w = np.ones(n_pairs)
+    similarities = np.zeros((n, n))
 
-    sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
+    for k in range(2000):
+        d = S.dot(w)
+        grad = 2 * z - a * (1. / d).dot(S) + 2 * b * w
+        w = w - gamma * grad
+        w[w < 0] = 0
 
-    # make it symmetric
-    sparsity_mask = np.logical_or(sparsity_mask, sparsity_mask.T)
+    i, j = 0, 1
+    for k in w: 
+        similarities[j, i] = k
+        similarities[i, j] = k
+        j += 1
+        if j == n:
+            i += 1
+            j = i + 1 
 
-    return np.multiply(graph_sim, sparsity_mask)
-
-def graph_discovery_full_knn(nodes, k=10, *args):
-
-    N = len(nodes)
-
-    alpha = np.hstack([n.alpha for n in nodes])
-
-    graph_sim = np.dot(alpha.T, alpha)
-
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(1 - graph_sim)
-
-    sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
-
-    # make it symmetric
-    sparsity_mask = np.logical_or(sparsity_mask, sparsity_mask.T)
-
-    return np.multiply(graph_sim, sparsity_mask)
+    return similarities
 
 gd_func_dict = {
-    "default": graph_discovery,
-    "laplacian": graph_discovery_sparse,
-    "knn": graph_discovery_knn,
-    "full-knn": graph_discovery_full_knn,
+    "kalo": kalo_graph_discovery,
+    "uniform": graph_discovery
 }
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
@@ -299,7 +292,7 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, monitors=None, checkevery=1):
+def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, monitors=None, checkevery=1):
 
     results = []
     N = len(nodes)
@@ -345,7 +338,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
         if resettable_t % gd_pace == 0:
 
             # graph discovery
-            similarities = gd_function(nodes, gd_args)
+            similarities = gd_function(nodes, *gd_args)
             adj_matrix = get_adj_matrix(similarities, 1e-3)
             set_edges(nodes, similarities, adj_matrix)
 
@@ -356,7 +349,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 
     return results
 
-# def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, monitors=None):
+# def gd_reg_local_FW(nodes, base_clfs, local_alphas, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, monitors=None):
 
 #     N = len(nodes)
 #     results = []

@@ -5,6 +5,7 @@ import numpy.linalg as LA
 from numpy.polynomial.polynomial import Polynomial, polyval2d
 import math
 import os
+import random
 
 from scipy.sparse import csr_matrix
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine, make_moons
@@ -90,8 +91,6 @@ def rotate(v1, v2):
 
 DATASET_PATH = os.path.join("datasets")
 
-DATASET_PATH = os.path.join("datasets")
-
 def load_school(path=DATASET_PATH, thr=35, split=1, moy=True):
     """ if moy is True, school attributes are averaged over the three years, otherwise
     139 x 3 tasks are created instead (a task = a school per year) """
@@ -161,24 +160,28 @@ def load_school(path=DATASET_PATH, thr=35, split=1, moy=True):
 
     return x_train, y_train, x_test, y_test, adjacency, task_similarities, len(task_similarities), max_nb_instances
 
-def load_computer(path=DATASET_PATH, thr=5, train_ratio=0.50, rnd_state=2018):
+def load_computer(path=DATASET_PATH, thr=5, max_train_ratio=0.50, rnd_state=2018):
 
     from scipy.io import loadmat
 
     rng = np.random.RandomState(rnd_state)
+    random.seed(rnd_state)
 
     dataset = loadmat(os.path.join(path, "conjointAnalysisComputerBuyers.mat"))
 
     scores, features = dataset["likeBuy"].astype(int), dataset["designMarix"].astype(int)
 
-    nb_train = int(train_ratio * features.shape[0])
+    max_nb_train = int(max_train_ratio * features.shape[0])
+    max_nb_train = max(3, max_nb_train)
     computer_ids = rng.permutation(np.arange(0, 20))
-    train_ids, test_ids = computer_ids[:nb_train], computer_ids[nb_train:]
 
     x_train, y_train = [], []
     x_test, y_test = [], []
 
     for i in range(190):
+
+        nb_train = random.randint(3, max_nb_train)
+        train_ids, test_ids = computer_ids[:nb_train], computer_ids[nb_train:]
 
         x_train.append(features[train_ids])
         x_test.append(features[test_ids])

@@ -16,13 +16,13 @@ B = 28
 random_state = 72018
 
 CV_SPLITS = 3
-MU_LIST = [10**i for i in range(-3, 3)]
-BETA_LIST = [10**i for i in range(3)]
+# MU_LIST = [10**i for i in range(-3, 3)]
+# BETA_LIST = [10**i for i in range(3)]
 
 STEP = 400
 Q = 2
-# MU_LIST = [0.1]
-# BETA_LIST = [1]
+MU_LIST = [0.1]
+BETA_LIST = [1]
 
 X, Y, _, _, N, max_nb_instances = load_computer()
 D = X[0].shape[1]

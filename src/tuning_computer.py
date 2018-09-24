@@ -19,7 +19,7 @@ CV_SPLITS = 3
 # MU_LIST = [10**i for i in range(-3, 3)]
 # BETA_LIST = [10**i for i in range(3)]
 
-STEP = 400
+STEP = 200
 Q = 2
 MU_LIST = [0.1]
 BETA_LIST = [1]
@@ -53,7 +53,8 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
             init_w = np.eye(N)
             nodes_copy = deepcopy(nodes)
-            gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"uniform", "pace_gd": STEP, "args":(Q, )}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
+            gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"kalo", "pace_gd": STEP, "args":(1, 1)}, init_w=init_w, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
+            # gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"uniform", "pace_gd": STEP, "args":(Q, )}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
 
             results[(mu, beta)] += central_test_accuracy(nodes_copy)
 

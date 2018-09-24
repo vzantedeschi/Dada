@@ -6,7 +6,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.neighbors import NearestNeighbors
 
 from classification import get_double_basis
-from kalofolias import euclidean_proj_simplex
+from kalofolias import obj_kalo
 from network import centralize_data, set_edges, get_alphas
 from utils import square_root_matrix, get_adj_matrix, stack_results
 
@@ -45,7 +45,7 @@ def kalo_graph_discovery(nodes, a=1, b=1, *args):
     n = len(nodes)
     n_pairs = int(n * (n - 1) / 2)
 
-    z = pairwise_distances(np.hstack(get_alphas(nodes)))**2
+    z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[np.triu_indices(n, 1)]
 
     # construct mapping matrix from 2D index to 1D index for convenience
@@ -67,12 +67,22 @@ def kalo_graph_discovery(nodes, a=1, b=1, *args):
 
     w = np.ones(n_pairs)
     similarities = np.zeros((n, n))
+    obj = obj_kalo(w, S, z, a, b)
 
-    for k in range(2000):
+    k = 0
+    while True:
         d = S.dot(w)
         grad = 2 * z - a * (1. / d).dot(S) + 2 * b * w
         w = w - gamma * grad
         w[w < 0] = 0
+        k += 1
+
+        if k % 100 == 0:
+            new_obj = obj_kalo(w, S, z, a, b)
+            if abs(obj - new_obj) > 0.1:
+                obj = new_obj
+            else:
+                break
 
     i, j = 0, 1
     for k in w: 

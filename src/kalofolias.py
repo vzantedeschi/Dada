@@ -102,15 +102,27 @@ if __name__ == '__main__':
     print("step:", gamma)
 
     w = np.ones(n_pairs)
+    obj = obj_kalo(w, S, z, alpha, beta)
 
-    for k in range(2000):
-        if k % 100 == 0:
-            print(k, obj_kalo(w, S, z, alpha, beta))
+    k = 0
+    while True:
+
         d = S.dot(w)
         grad = 2 * z - alpha * (1. / d).dot(S) + 2 * beta * w
+
         w = w - gamma * grad
         w[w < 0] = 0
+        k += 1
 
+        if k % 100 == 0:
+            new_obj = obj_kalo(w, S, z, alpha, beta)
+            print(new_obj)
+            if obj - new_obj > 0.0001:
+                obj = new_obj
+            else:
+                break
+
+    print(k)
     print(z)
     print(w[:10])
     print((w > 0).sum() / n_pairs)

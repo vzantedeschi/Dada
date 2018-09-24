@@ -172,7 +172,7 @@ def load_computer(path=DATASET_PATH, thr=5, max_train_ratio=0.50, rnd_state=2018
     scores, features = dataset["likeBuy"].astype(int), dataset["designMarix"].astype(int)
 
     max_nb_train = int(max_train_ratio * features.shape[0])
-    max_nb_train = max(3, max_nb_train)
+    max_nb_train = max(5, max_nb_train)
     computer_ids = rng.permutation(np.arange(0, 20))
 
     x_train, y_train = [], []
@@ -180,7 +180,7 @@ def load_computer(path=DATASET_PATH, thr=5, max_train_ratio=0.50, rnd_state=2018
 
     for i in range(190):
 
-        nb_train = random.randint(3, max_nb_train)
+        nb_train = random.randint(5, max_nb_train)
         train_ids, test_ids = computer_ids[:nb_train], computer_ids[nb_train:]
 
         x_train.append(features[train_ids])

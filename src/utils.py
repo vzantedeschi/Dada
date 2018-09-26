@@ -46,12 +46,11 @@ def dict_to_csv(my_dict, header, filename):
 def stack_results(nodes, results, dual, monitors):
     """ modify results! """
 
-    t = len(results)
     results.append({})  
 
     for k, call in monitors.items():
-        results[t][k] = call[0](nodes, *call[1])
-    results[t]["duality-gap"] = dual
+        results[-1][k] = call[0](nodes, *call[1])
+    results[-1]["duality-gap"] = dual
 
 
 # --------------------------------------------------------------------- ARRAY ROUTINES

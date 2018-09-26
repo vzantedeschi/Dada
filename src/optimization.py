@@ -84,7 +84,6 @@ def kalo_graph_discovery(nodes, a=1, b=1, *args):
             if abs(obj - new_obj) > abs(stop_thresh * obj):
                 obj = new_obj
             else:
-                print(k)
                 break
 
     i, j = 0, 1
@@ -358,7 +357,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace
             if reset_step:
                 resettable_t = 0
 
-            # results[t+1]["adj-matrix"] = similarities
+            results[-1]["adj-matrix"] = adj_matrix
 
     return results
 

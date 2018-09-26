@@ -13,22 +13,19 @@ from utils import load_computer, get_split_per_list, get_min_max
 
 NB_ITER = 5000
 B = 28
+BETA = 10
 random_state = 72018
 
 CV_SPLITS = 3
-# MU_LIST = [10**i for i in range(-3, 3)]
-# BETA_LIST = [10**i for i in range(3)]
+MU_LIST = [10**i for i in range(-3, 3)]
+B_LIST = [10**i for i in range(-2, 3)]
 
-STEP = 400
-Q = 2
-MU_LIST = [0.1]
-BETA_LIST = [1]
-B_LIST = [1]
+STEP = 500
 
 X, Y, _, _, N, max_nb_instances = load_computer()
 D = X[0].shape[1]
 
-results = {}.fromkeys(itertools.product(MU_LIST, BETA_LIST, B_LIST), 0.)
+results = {}.fromkeys(itertools.product(MU_LIST, B_LIST), 0.)
 
 init_w = np.eye(N)
 
@@ -50,16 +47,14 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
     for mu in MU_LIST:
 
-        for beta in BETA_LIST:
+        for b in B_LIST:
 
-            for b in B_LIST:
+            print(mu, b)
 
-                print(mu, beta, b)
+            nodes_copy = deepcopy(nodes)
+            gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"kalo", "pace_gd": STEP, "args":(1, b)}, init_w=init_w, beta=BETA, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
+            # gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"uniform", "pace_gd": STEP, "args":(Q, )}, beta=BETA, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
 
-                nodes_copy = deepcopy(nodes)
-                gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"kalo", "pace_gd": STEP, "args":(1, b)}, init_w=init_w, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
-                # gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"uniform", "pace_gd": STEP, "args":(Q, )}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
+            results[(mu, b)] += central_test_accuracy(nodes_copy)
 
-                results[(mu, beta, b)] += central_test_accuracy(nodes_copy)
-
-print("best mu, beta, b:", max(results, key=results.get))
+print("best mu, b:", max(results, key=results.get))

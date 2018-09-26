@@ -42,6 +42,8 @@ def graph_discovery(nodes, k=1, *args):
 
 def kalo_graph_discovery(nodes, a=1, b=1, *args):
 
+    stop_thresh = 0.001
+
     n = len(nodes)
     n_pairs = int(n * (n - 1) / 2)
 
@@ -79,9 +81,10 @@ def kalo_graph_discovery(nodes, a=1, b=1, *args):
 
         if k % 100 == 0:
             new_obj = obj_kalo(w, S, z, a, b)
-            if abs(obj - new_obj) > 0.1:
+            if abs(obj - new_obj) > abs(stop_thresh * obj):
                 obj = new_obj
             else:
+                print(k)
                 break
 
     i, j = 0, 1

@@ -9,6 +9,7 @@ import random
 
 from scipy.sparse import csr_matrix
 from sklearn.datasets import load_breast_cancer, load_iris, load_wine, make_moons
+from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
@@ -91,7 +92,7 @@ def rotate(v1, v2):
 
 DATASET_PATH = os.path.join("datasets")
 
-def load_school(path=DATASET_PATH, thr=35, split=1, moy=True):
+def load_school(path=DATASET_PATH, thr=20, split=1, moy=True):
     """ if moy is True, school attributes are averaged over the three years, otherwise
     139 x 3 tasks are created instead (a task = a school per year) """
     from scipy.io import loadmat

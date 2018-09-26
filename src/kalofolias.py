@@ -117,7 +117,7 @@ if __name__ == '__main__':
         if k % 100 == 0:
             new_obj = obj_kalo(w, S, z, alpha, beta)
             print(new_obj)
-            if obj - new_obj > 0.0001:
+            if abs(obj - new_obj) > abs(0.00001 * obj):
                 obj = new_obj
             else:
                 break

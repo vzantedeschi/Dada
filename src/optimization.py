@@ -63,7 +63,9 @@ def kalo_graph_discovery(nodes, a=1, b=1, *args):
     for i in range(n):
         for j in range(n):
             if j != i:
+                # S[i, map_idx[min(i, j), max(i, j)]] = 1 / nodes[i].confidence
                 S[i, map_idx[min(i, j), max(i, j)]] = 1
+
 
     gamma = 1 / (2 * np.linalg.norm(z) + a * np.linalg.norm(S.T.dot(S)) + 2 * b)
 

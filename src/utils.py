@@ -366,31 +366,6 @@ def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_
 
     return n, theta_true, cluster_indexes
 
-def generate_polynomials(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2), random_state=1):
-    """Generate true models of all the agents"""
-
-    rng = np.random.RandomState(random_state)
-    
-    if inter_clust_stdev > 0:
-        centroids = rng.normal(size=(nb_clust, 2, 3), scale=inter_clust_stdev)
-
-    else:
-        centroids = np.zeros((nb_clust, 2, 3))
-    
-    cluster_indexes = []
-    start = 0
-    for _ in range(nb_clust):
-        cluster_indexes.append(np.arange(start, start+nodes_per_clust))
-        start += nodes_per_clust
-    
-    roots = [rng.normal(loc=c, scale=intra_clust_stdev, size=(nodes_per_clust, 2, 3)) for c in centroids]
-
-    polynomial_coeffs = np.vstack([Polynomial.fromroots(p) for r in roots for p in r])
-
-    n = len(polynomial_coeffs)
-
-    return n, polynomial_coeffs, cluster_indexes
-
 def generate_moons(n, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=0.1, test_samples_per_node=100, sample_error_rate=5e-2, random_state=1):
 
     rng = np.random.RandomState(random_state)

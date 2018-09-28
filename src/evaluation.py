@@ -20,6 +20,9 @@ def alpha_variance(nodes, *args):
 def loss(nodes, *args):
     return np.sum([log(np.mean(n.compute_weights(distr=False))) for n in nodes])
 
+def losses(nodes, *args):
+    return [n.confidence * log(np.sum(n.compute_weights(distr=True))) for n in nodes]
+
 def central_loss(nodes, *args):
     return log(np.mean(np.concatenate([n.compute_weights(distr=False) for n in nodes])))
 

@@ -6,6 +6,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.neighbors import NearestNeighbors
 
 from classification import get_double_basis
+from evaluation import losses
 from kalofolias import obj_kalo
 from network import centralize_data, set_edges, get_alphas
 from utils import square_root_matrix, get_adj_matrix, stack_results
@@ -42,13 +43,16 @@ def graph_discovery(nodes, k=1, *args):
 
 def kalo_graph_discovery(nodes, mu=1, b=1, *args):
 
-    stop_thresh = 0.001
+    stop_thresh = 0.1
 
     n = len(nodes)
     n_pairs = int(n * (n - 1) / 2)
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[np.triu_indices(n, 1)]
+
+    l = np.asarray(losses(nodes))
+    print(l)
 
     # construct mapping matrix from 2D index to 1D index for convenience
     map_idx = np.ones((n, n), dtype=int)
@@ -67,25 +71,31 @@ def kalo_graph_discovery(nodes, mu=1, b=1, *args):
                 S[i, map_idx[min(i, j), max(i, j)]] = 1
 
 
-    gamma = 1 / (2 * mu * np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * b)
-
     w = np.ones(n_pairs)
     similarities = np.zeros((n, n))
-    obj = obj_kalo(w, S, z, mu, b)
+    d = S.dot(w)
+
+    gamma = 1 / (np.linalg.norm(l.dot(S)) + mu * np.linalg.norm(z) / 2 + np.linalg.norm(S.T.dot(S)) + 2 * b)
+    print(gamma)
+
+    obj = obj_kalo(w, S, z, d, l, mu, b)
 
     k = 0
     while True:
-        d = S.dot(w)
-        grad = 2 * mu * z - (1. / d).dot(S) + 2 * b * w
+        grad = l.dot(S) + mu * z / 2 - (1. / d).dot(S) + 2 * b * w
         w = w - gamma * grad
         w[w < 0] = 0
         k += 1
 
         if k % 100 == 0:
-            new_obj = obj_kalo(w, S, z, mu, b)
+            new_obj = obj_kalo(w, S, z, d, l, mu, b)
             if abs(obj - new_obj) > abs(stop_thresh * obj):
                 obj = new_obj
+                # print(obj)
+                # print(obj, l.dot(S))
+                d = S.dot(w)
             else:
+                print(k)
                 break
 
     i, j = 0, 1
@@ -347,8 +357,6 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace
         if t % checkevery == 0:
             stack_results(nodes, results, dual_gap, monitors)
 
-        resettable_t += 1
-
         if resettable_t % gd_pace == 0:
 
             # graph discovery
@@ -360,6 +368,8 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace
                 resettable_t = 0
 
             results[-1]["adj-matrix"] = adj_matrix
+
+        resettable_t += 1
 
     return results
 

@@ -40,7 +40,7 @@ def graph_discovery(nodes, k=1, *args):
 
     return res
 
-def kalo_graph_discovery(nodes, a=1, b=1, *args):
+def kalo_graph_discovery(nodes, mu=1, b=1, *args):
 
     stop_thresh = 0.001
 
@@ -67,22 +67,22 @@ def kalo_graph_discovery(nodes, a=1, b=1, *args):
                 S[i, map_idx[min(i, j), max(i, j)]] = 1
 
 
-    gamma = 1 / (2 * np.linalg.norm(z) + a * np.linalg.norm(S.T.dot(S)) + 2 * b)
+    gamma = 1 / (2 * mu * np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * b)
 
     w = np.ones(n_pairs)
     similarities = np.zeros((n, n))
-    obj = obj_kalo(w, S, z, a, b)
+    obj = obj_kalo(w, S, z, mu, b)
 
     k = 0
     while True:
         d = S.dot(w)
-        grad = 2 * z - a * (1. / d).dot(S) + 2 * b * w
+        grad = 2 * mu * z - (1. / d).dot(S) + 2 * b * w
         w = w - gamma * grad
         w[w < 0] = 0
         k += 1
 
         if k % 100 == 0:
-            new_obj = obj_kalo(w, S, z, a, b)
+            new_obj = obj_kalo(w, S, z, mu, b)
             if abs(obj - new_obj) > abs(stop_thresh * obj):
                 obj = new_obj
             else:
@@ -319,7 +319,7 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace
 
     # get margin matrices A
     for n in nodes:
-        n.init_matrices(base_clfs)
+        n.init_matrices(base_clfs, n.alpha)
         
     adj_matrix = get_adj_matrix(init_w, 1e-3)
     set_edges(nodes, init_w, adj_matrix)

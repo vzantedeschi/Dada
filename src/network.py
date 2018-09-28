@@ -17,6 +17,7 @@ class Node():
         self.confidence = 1
         self.sum_similarities = 1
         self.clf = None
+        self.alpha = None
 
     def predict(self, sample):
         if self.clf is None:

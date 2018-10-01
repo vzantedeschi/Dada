@@ -87,6 +87,18 @@ def rotate(v1, v2):
 
     return np.dot(v1, rotation)
 
+def rotation_angle(axis):
+
+    c = np.dot(axis, np.asarray([1,0])) / np.linalg.norm(axis)
+    s = math.sin(math.acos(c)*np.sign(axis[1]))
+
+    angle = math.acos(c)
+
+    if math.asin(s) < 0:
+        angle = -angle + 2 * math.pi
+
+    return angle
+
 # ---------------------------------------------------------------------- LOAD DATASETS
 
 DATASET_PATH = os.path.join("datasets")
@@ -343,7 +355,7 @@ def get_split_per_list(x, nb_splits, shuffle=True, rnd_state=None):
 # ----------------------------------------------------------------------- SYNTHETIC DATASETS
 
 # code adapted from https://gitlab.inria.fr/magnet/decentralizedpaper/blob/master/notebooks/basic_data_generation.ipynb
-def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2), normalize_centroids=False, random_state=1):
+def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_clust_stdev=np.sqrt(1/2), normalize_centroids=False, random_state=1, get_angles=False):
     """Generate true models of all the agents"""
 
     rng = np.random.RandomState(random_state)
@@ -363,6 +375,10 @@ def generate_models(nb_clust=1, nodes_per_clust=100, inter_clust_stdev=0, intra_
             
     theta_true = np.vstack([rng.normal(loc=centroid, scale=intra_clust_stdev, size=(nodes_per_clust,2)) for centroid in centroids])
     n = len(theta_true)
+
+    if get_angles:
+        angles = [rotation_angle(t) for t in theta_true]
+        return n, theta_true, cluster_indexes, angles
 
     return n, theta_true, cluster_indexes
 
@@ -425,6 +441,17 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
 
     return n_samples, x, y, x_test, y_test, max_nb_local_insts
 
+def generate_fixed_moons(dim, rnd_state=1):
+    
+    nb_clust = 3
+    nodes_per_clust = [2, 4, 6]
+    max_samples_per_clust = [20, 15, 10]
+    axes_clust = [np.asarray([1, 1]), np.asarray([-1, 1]), np.asarray([1, -1])]
+    k = sum(nodes_per_clust)
+            
+    theta_true = np.vstack([[a]*n for a, n in zip(axes_clust, nodes_per_clust)])
+
+    return generate_moons(k, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=0.1, test_samples_per_node=100, sample_error_rate=5e-2, random_state=rnd_state)
 # ----------------------------------------------------------
 
 def partition(x, y, nb_nodes, cluster_data=True, random_state=None):

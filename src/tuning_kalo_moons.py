@@ -19,8 +19,8 @@ random_state = 2017
 BETA = 10
 
 CV_SPLITS = 3
-MU_LIST = [10**i for i in range(-3, 3)]
-B_LIST = [10**i for i in range(-2, 3)]
+MU_LIST = [0.1]
+B_LIST = [1]
 
 STEP = 200
 

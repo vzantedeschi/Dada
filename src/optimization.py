@@ -67,16 +67,16 @@ def kalo_graph_discovery(nodes, mu=1, b=1, *args):
                 S[i, map_idx[min(i, j), max(i, j)]] = 1
 
 
-    gamma = 1 / (2 * mu * np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * b)
+    gamma = 1 / (mu * np.linalg.norm(z) / 2 + np.linalg.norm(S.T.dot(S)) + 2 * b)
 
     w = np.ones(n_pairs)
     similarities = np.zeros((n, n))
     obj = obj_kalo(w, S, z, mu, b)
 
     k = 0
-    while True:
+    while k < 10000:
         d = S.dot(w)
-        grad = 2 * mu * z - (1. / d).dot(S) + 2 * b * w
+        grad = mu * z / 2 - (1. / d).dot(S) + 2 * b * w
         w = w - gamma * grad
         w[w < 0] = 0
         k += 1
@@ -359,7 +359,8 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace
             if reset_step:
                 resettable_t = 0
 
-            results[-1]["adj-matrix"] = adj_matrix
+    results[-1]["adj-matrix"] = adj_matrix
+    results[-1]["similarities"] = similarities
 
     return results
 

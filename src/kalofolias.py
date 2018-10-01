@@ -52,7 +52,7 @@ def obj_kalo(w, S, z, mu, beta):
     if np.any(w < 0):
         return np.inf
     else:
-        return 2 * mu * w.dot(z) - np.log(S.dot(w)).sum() + beta * w.dot(w)
+        return mu * w.dot(z) / 2 - np.log(S.dot(w)).sum() + beta * w.dot(w)
 
 
 def obj_dong(w, S, z, alpha, c):

@@ -441,17 +441,53 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
 
     return n_samples, x, y, x_test, y_test, max_nb_local_insts
 
-def generate_fixed_moons(dim, rnd_state=1):
+def generate_fixed_moons(dim, test_samples_per_node=100, sample_error_rate=5e-2, rnd_state=1):
     
-    nb_clust = 3
+    rng = np.random.RandomState(rnd_state)
+
+    nb_clusters = 3
     nodes_per_clust = [2, 4, 6]
     max_samples_per_clust = [20, 15, 10]
     axes_clust = [np.asarray([1, 1]), np.asarray([-1, 1]), np.asarray([1, -1])]
-    k = sum(nodes_per_clust)
-            
-    theta_true = np.vstack([[a]*n for a, n in zip(axes_clust, nodes_per_clust)])
+    nb_nodes = sum(nodes_per_clust)
+    
+    theta_true = []
+    angles = []
 
-    return generate_moons(k, theta_true, dim, min_samples_per_node=3, max_samples_per_node=20, samples_stdev=0.1, test_samples_per_node=100, sample_error_rate=5e-2, random_state=rnd_state)
+    max_nb_local_insts = 0
+
+    x, y = [], []
+    x_test, y_test = [], []
+
+    for a, n, ma in zip(axes_clust, nodes_per_clust, max_samples_per_clust):  
+        theta_true.append([[a]*n])
+        angles.append(rotation_angle(a))
+
+        n_samples = rng.randint(5, ma, size=n)
+        max_nb_local_insts = max(max_nb_local_insts, n_samples.max())
+
+        for n_i in n_samples:
+            x_i, y_i = make_moons(n_i, noise=0.1, random_state=rnd_state)
+            x_i = np.hstack((rotate(x_i, a), np.zeros((n_i, dim - 2))))
+            x.append(x_i)
+            y_i[y_i==0] = -1
+            y.append(y_i)
+
+        for i in range(n):
+            x_i, y_i = make_moons(test_samples_per_node, noise=samples_stdev, random_state=rnd_state)
+            x_i = np.hstack((rotate(x_i, a), np.zeros((test_samples_per_node, dim - 2))))
+            x_test.append(x_i)
+            y_i[y_i==0] = -1
+            y_test.append(y_i)
+
+    # Add noise
+    for i in range(nb_nodes):
+        y[i][rng.choice(len(y[i]), replace=False, size=int(sample_error_rate*len(y[i])))] *= -1
+        y_test[i][rng.choice(len(y_test[i]), replace=False, size=int(sample_error_rate*len(y_test[i])))] *= -1
+
+    theta_true = np.vstack(theta_true)
+
+    return x, y, x_test, y_test, max_nb_local_insts, theta_true, angles
 # ----------------------------------------------------------
 
 def partition(x, y, nb_nodes, cluster_data=True, random_state=None):

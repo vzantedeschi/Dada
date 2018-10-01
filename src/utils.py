@@ -441,7 +441,7 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
 
     return n_samples, x, y, x_test, y_test, max_nb_local_insts
 
-def generate_fixed_moons(dim, test_samples_per_node=100, sample_error_rate=5e-2, rnd_state=1):
+def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=np.sqrt(1./2), sample_error_rate=5e-2, rnd_state=1):
     
     rng = np.random.RandomState(rnd_state)
 
@@ -455,13 +455,17 @@ def generate_fixed_moons(dim, test_samples_per_node=100, sample_error_rate=5e-2,
     angles = []
 
     max_nb_local_insts = 0
+    groundtruth_graph = np.block([[np.ones((2, 2)), np.zeros((2, 10))], 
+                                  [np.zeros((4, 2)), np.ones((4, 4)), np.zeros((4, 6))],
+                                  [np.zeros((6, 6)), np.ones((6, 6))]])
+    np.fill_diagonal(groundtruth_graph, 0)
 
     x, y = [], []
     x_test, y_test = [], []
 
     for a, n, ma in zip(axes_clust, nodes_per_clust, max_samples_per_clust):  
-        theta_true.append([[a]*n])
-        angles.append(rotation_angle(a))
+        theta_true.append([a]*n)
+        angles += [rotation_angle(a)]*n
 
         n_samples = rng.randint(5, ma, size=n)
         max_nb_local_insts = max(max_nb_local_insts, n_samples.max())
@@ -487,7 +491,7 @@ def generate_fixed_moons(dim, test_samples_per_node=100, sample_error_rate=5e-2,
 
     theta_true = np.vstack(theta_true)
 
-    return x, y, x_test, y_test, max_nb_local_insts, theta_true, angles
+    return nb_nodes, x, y, x_test, y_test, max_nb_local_insts, theta_true, angles, groundtruth_graph
 # ----------------------------------------------------------
 
 def partition(x, y, nb_nodes, cluster_data=True, random_state=None):

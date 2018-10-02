@@ -48,12 +48,15 @@ def euclidean_proj_simplex(v, s=1):
     return w
 
 
-def obj_kalo(w, S, z, mu, beta):
-    if np.any(w < 0):
-        return np.inf
-    else:
-        return mu * w.dot(z) / 2 - np.log(S.dot(w)).sum() + beta * w.dot(w)
+def obj_kalo(w, z, S, l, mu, b):
 
+    d = S.dot(w)
+
+    # print("kalo", d.dot(l), mu * w.dot(z) / 2, - np.log(d).sum(), b * w.dot(w))
+    if np.count_nonzero(d) == 0:
+        return np.inf
+
+    return d.dot(l) + mu * w.dot(z) / 2 - np.log(d).sum() + b * w.dot(w)
 
 def obj_dong(w, S, z, alpha, c):
     if np.any(w < 0) or not np.isclose(w.sum(), c):

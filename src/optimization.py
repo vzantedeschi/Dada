@@ -43,7 +43,7 @@ def graph_discovery(nodes, k=1, *args):
 
 def kalo_graph_discovery(nodes, mu=1, b=1, *args):
 
-    stop_thresh = 0.1
+    stop_thresh = 0.001
 
     n = len(nodes)
     n_pairs = int(n * (n - 1) / 2)
@@ -52,7 +52,6 @@ def kalo_graph_discovery(nodes, mu=1, b=1, *args):
     z = z[np.triu_indices(n, 1)]
 
     l = np.asarray(losses(nodes))
-    print(l)
 
     # construct mapping matrix from 2D index to 1D index for convenience
     map_idx = np.ones((n, n), dtype=int)
@@ -76,27 +75,36 @@ def kalo_graph_discovery(nodes, mu=1, b=1, *args):
     d = S.dot(w)
 
     gamma = 1 / (np.linalg.norm(l.dot(S)) + mu * np.linalg.norm(z) / 2 + np.linalg.norm(S.T.dot(S)) + 2 * b)
-    print(gamma)
-
-    obj = obj_kalo(w, S, z, d, l, mu, b)
-
+    obj = obj_kalo(w, z, S, l, mu, b)
+    # print("objective 0", obj)
     k = 0
     while True:
         grad = l.dot(S) + mu * z / 2 - (1. / d).dot(S) + 2 * b * w
-        w = w - gamma * grad
-        w[w < 0] = 0
+        # print(grad)
+        new_w = w - gamma * grad
+        new_w[new_w < 0] = 0
         k += 1
 
         if k % 100 == 0:
-            new_obj = obj_kalo(w, S, z, d, l, mu, b)
-            if abs(obj - new_obj) > abs(stop_thresh * obj):
+            new_obj = obj_kalo(new_w, z, S, l, mu, b)
+
+            if np.isinf(new_obj):
+                gamma *= 0.1 
+                # print("inf")
+
+            elif abs(obj - new_obj) > abs(stop_thresh * obj):
                 obj = new_obj
-                # print(obj)
-                # print(obj, l.dot(S))
-                d = S.dot(w)
+                w = new_w
+                # print("continue")
+
             else:
-                print(k)
+                # print("break")
+                w = new_w
                 break
+        
+        d = S.dot(w)
+
+    # print("objective %d" % k, new_obj)
 
     i, j = 0, 1
     for k in w: 

@@ -2,6 +2,8 @@ import numpy as np
 
 from random import random
 
+from sklearn.metrics.pairwise import pairwise_distances
+
 from classification import get_basis, LinearClassifier
 from utils import compute_adjacencies, partition
 
@@ -94,6 +96,9 @@ def get_alphas(nodes):
     alphas = [n.alpha for n in nodes]
 
     return alphas
+
+def compute_alpha_diff(nodes):
+    return pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
 
 def set_edges(nodes, similarities, adj_matrix, max_nb_instances=1):
 

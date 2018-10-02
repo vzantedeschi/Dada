@@ -43,13 +43,13 @@ def dict_to_csv(my_dict, header, filename):
 
 # --------------------------------------------------------------------------------- MONITORS
 
-def stack_results(nodes, results, dual, monitors):
+def stack_results(nodes, results, dual, monitors, similarities=None):
     """ modify results! """
 
     results.append({})  
-
     for k, call in monitors.items():
-        results[-1][k] = call[0](nodes, *call[1])
+        args = call[1] + [similarities]
+        results[-1][k] = call[0](nodes, *args)
     results[-1]["duality-gap"] = dual
 
 

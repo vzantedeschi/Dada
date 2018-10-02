@@ -4,7 +4,7 @@ import numpy as np
 from statistics import mean
 
 from classification import get_stumps
-from evaluation import central_test_accuracy
+from evaluation import central_test_accuracy, kalo_objective
 from network import synthetic_graph
 from optimization import gd_reg_local_FW
 from utils import generate_models, generate_moons, get_split_per_list, get_min_max

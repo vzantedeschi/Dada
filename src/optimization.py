@@ -263,35 +263,6 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors
 
     return results
 
-# def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=None):
-
-#     results = []
-
-#     # get margin matrices A
-#     for n in nodes:
-#         n.init_matrices(base_clfs)
-
-#     results.append({})  
-#     for k, call in monitors.items():
-#         results[0][k] = call[0](nodes, *call[1])
-#     results[0]["duality-gap"] = 0
-    
-#     # frank-wolfe
-#     for t in range(nb_iter):
-
-#         gamma = 2 / (2 + t)
-
-#         reg_sum = [sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)]) for n in nodes]
-
-#         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta, 1, mu, reg_sum))
-
-#         results.append({})  
-#         for k, call in monitors.items():
-#             results[t+1][k] = call[0](nodes, *call[1])
-#         results[t+1]["duality-gap"] = dual_gap
-
-#     return results
-
 def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=None, checkevery=1):
 
     results = []
@@ -343,11 +314,12 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace
     adj_matrix = get_adj_matrix(init_w, 1e-3)
     set_edges(nodes, init_w, adj_matrix)
 
-    stack_results(nodes, results, 0, monitors)
+    stack_results(nodes, results, 0, monitors, init_w)
 
     duals = [0] * N
 
     resettable_t = 0
+    similarities = init_w.copy()
     for t in range(nb_iter):
 
         # pick one node at random uniformally
@@ -364,13 +336,14 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace
         dual_gap = sum(duals)
 
         if t % checkevery == 0:
-            stack_results(nodes, results, dual_gap, monitors)
+            stack_results(nodes, results, dual_gap, monitors, similarities)
 
         if resettable_t % gd_pace == 0:
 
             # graph discovery
             similarities = gd_function(nodes, *gd_args)
             adj_matrix = get_adj_matrix(similarities, 1e-3)
+            np.fill_diagonal(similarities, 0.)
             set_edges(nodes, similarities, adj_matrix)
 
             if reset_step:

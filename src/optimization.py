@@ -78,7 +78,7 @@ def kalo_graph_discovery(nodes, mu=1, b=1, *args):
     obj = obj_kalo(w, z, S, l, mu, b)
     # print("objective 0", obj)
     k = 0
-    while True:
+    while k < 20000:
         grad = l.dot(S) + mu * z / 2 - (1. / d).dot(S) + 2 * b * w
         # print(grad)
         new_w = w - gamma * grad

@@ -2,6 +2,7 @@ import warnings
 
 from math import log
 import numpy as np
+from numpy import linalg as LA
 
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
@@ -30,7 +31,7 @@ def kalo_objective(nodes, mu, b, w, *args):
     d = np.sum(w, axis=1)
     l = np.asarray(losses(nodes))
 
-    return d.dot(l) + mu * w.dot(z) / 2 - np.log(d).sum() + b * w.dot(w)
+    return d.dot(l) + mu * np.multiply(w, z).sum() / 2 - np.log(d).sum() + b * LA.norm(w, 'fro')**2
 
 def central_loss(nodes, *args):
     return log(np.mean(np.concatenate([n.compute_weights(distr=False) for n in nodes])))

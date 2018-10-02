@@ -376,10 +376,10 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"uniform", "pace
             if reset_step:
                 resettable_t = 0
 
+        resettable_t += 1
+
     results[-1]["adj-matrix"] = adj_matrix
     results[-1]["similarities"] = similarities
-
-        resettable_t += 1
 
     return results
 

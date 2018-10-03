@@ -441,23 +441,26 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
 
     return n_samples, x, y, x_test, y_test, max_nb_local_insts
 
-def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=0.1, sample_error_rate=5e-2, rnd_state=1):
+def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=5e-2, sample_error_rate=5e-2, intra_clust_stdev=5e-2, rnd_state=1):
     
     rng = np.random.RandomState(rnd_state)
 
     nb_clusters = 3
-    nodes_per_clust = [2, 4, 6]
-    max_samples_per_clust = [20, 15, 10]
-    axes_clust = [np.asarray([1, 1]), np.asarray([-1, 1]), np.asarray([1, -1])]
+    nodes_per_clust = [10, 20, 30, 40]
+    max_samples_per_clust = [20, 15, 10, 5]
+    axes_clust = [np.asarray([1, 1]), np.asarray([-1, 1]), np.asarray([1, -1]), np.asarray([-1, -1])]
     nb_nodes = sum(nodes_per_clust)
     
     theta_true = []
     angles = []
 
     max_nb_local_insts = 0
-    groundtruth_graph = np.block([[np.ones((2, 2)), np.zeros((2, 10))], 
-                                  [np.zeros((4, 2)), np.ones((4, 4)), np.zeros((4, 6))],
-                                  [np.zeros((6, 6)), np.ones((6, 6))]])
+    groundtruth_graph = np.zeros((nb_nodes, nb_nodes))
+
+    idx = 0
+    for n in nodes_per_clust:
+        groundtruth_graph[np.ix_(range(idx, n+idx), range(idx, n+idx))] = np.ones((n, n))
+        idx += n
     np.fill_diagonal(groundtruth_graph, 0)
 
     x, y = [], []
@@ -465,23 +468,27 @@ def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=0.1, samp
 
     # loop on clusters
     for a, n, ma in zip(axes_clust, nodes_per_clust, max_samples_per_clust):  
-        theta_true.append([a]*n)
-        angles += [rotation_angle(a)]*n
+        axes = rng.normal(loc=a, scale=intra_clust_stdev, size=(n ,2))
+        theta_true.append(axes)
 
-        n_samples = rng.randint(5, ma, size=n)
+        n_samples = rng.randint(3, ma, size=n)
         max_nb_local_insts = max(max_nb_local_insts, n_samples.max())
 
         # loops on nodes of cluster
-        for n_i in n_samples:
+        for n_i, axis in zip(n_samples, axes):
+
+            angles.append(rotation_angle(axis))
             x_i, y_i = make_moons(n_i, noise=samples_stdev, random_state=rnd_state)
-            x_i = np.hstack((rotate(x_i, a), np.zeros((n_i, dim - 2))))
+
+            x_i = np.hstack((rotate(x_i, axis), np.zeros((n_i, dim - 2))))
             x.append(x_i)
+
             y_i[y_i==0] = -1
             y.append(y_i)
 
-        for i in range(n):
+        for axis in axes:
             x_i, y_i = make_moons(test_samples_per_node, noise=samples_stdev, random_state=rnd_state)
-            x_i = np.hstack((rotate(x_i, a), np.zeros((test_samples_per_node, dim - 2))))
+            x_i = np.hstack((rotate(x_i, axis), np.zeros((test_samples_per_node, dim - 2))))
             x_test.append(x_i)
             y_i[y_i==0] = -1
             y_test.append(y_i)

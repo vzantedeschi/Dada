@@ -441,7 +441,7 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
 
     return n_samples, x, y, x_test, y_test, max_nb_local_insts
 
-def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=np.sqrt(1./2), sample_error_rate=5e-2, rnd_state=1):
+def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=0.1, sample_error_rate=5e-2, rnd_state=1):
     
     rng = np.random.RandomState(rnd_state)
 
@@ -463,6 +463,7 @@ def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=np.sqrt(1
     x, y = [], []
     x_test, y_test = [], []
 
+    # loop on clusters
     for a, n, ma in zip(axes_clust, nodes_per_clust, max_samples_per_clust):  
         theta_true.append([a]*n)
         angles += [rotation_angle(a)]*n
@@ -470,8 +471,9 @@ def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=np.sqrt(1
         n_samples = rng.randint(5, ma, size=n)
         max_nb_local_insts = max(max_nb_local_insts, n_samples.max())
 
+        # loops on nodes of cluster
         for n_i in n_samples:
-            x_i, y_i = make_moons(n_i, noise=0.1, random_state=rnd_state)
+            x_i, y_i = make_moons(n_i, noise=samples_stdev, random_state=rnd_state)
             x_i = np.hstack((rotate(x_i, a), np.zeros((n_i, dim - 2))))
             x.append(x_i)
             y_i[y_i==0] = -1

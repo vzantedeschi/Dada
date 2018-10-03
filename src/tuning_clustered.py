@@ -10,7 +10,7 @@ from optimization import regularized_local_FW
 from utils import generate_fixed_moons, get_split_per_list, get_min_max
 
 # set graph of nodes with local personalized data
-NB_ITER = 5000
+NB_ITER = 10000
 D = 20
 B = 200
 NOISE_R = 0.05

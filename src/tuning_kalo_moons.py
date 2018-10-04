@@ -12,7 +12,7 @@ from utils import generate_models, generate_moons, get_split_per_list, get_min_m
 # set graph of nodes with local personalized data
 NB_ITER = 3000 # 10000 for 100 nodes
 K = 20 # 100 for 100 nodes
-STEP = 200 # 500 for 100 nodes
+STEP = 300 # 500 for 100 nodes
 
 D = 20
 B = 200

@@ -71,11 +71,12 @@ if __name__ == '__main__':
     dim = 10
     n_pairs = int(n * (n - 1) / 2)
 
+    triu_ix = np.triu_indices(n, 1)
     np.random.seed(42)
     # alpha = np.random.rand(n, dim)
     alpha = [[0, 0], [0, 1], [1, 0], [1.1, 0], [1.2, 0]]
     z = pairwise_distances(alpha)**2
-    z = z[np.triu_indices(n, 1)]
+    z = z[triu_ix]
 
     # construct mapping matrix from 2D index to 1D index for convenience
     map_idx = np.ones((n, n), dtype=int)
@@ -87,10 +88,14 @@ if __name__ == '__main__':
 
     # Construct linear transformation matrix mapping weight vector to degree vector
     S = np.zeros((n, n_pairs))
+    k = 0
     for i in range(n):
-        for j in range(n):
-            if j != i:
-                S[i, map_idx[min(i, j), max(i, j)]] = 1
+        for j in range(i + 1, n):
+            S[i, k] = 1
+            S[j, k] = 1
+            k += 1
+
+    print(S)
 
     alpha = 1
     beta = 1
@@ -105,10 +110,9 @@ if __name__ == '__main__':
     print("step:", gamma)
 
     w = np.ones(n_pairs)
-    obj = obj_kalo(w, S, z, alpha, beta)
 
     k = 0
-    while True:
+    while k < 1000:
 
         d = S.dot(w)
         grad = 2 * z - alpha * (1. / d).dot(S) + 2 * beta * w
@@ -117,14 +121,9 @@ if __name__ == '__main__':
         w[w < 0] = 0
         k += 1
 
-        if k % 100 == 0:
-            new_obj = obj_kalo(w, S, z, alpha, beta)
-            print(new_obj)
-            if abs(obj - new_obj) > abs(0.00001 * obj):
-                obj = new_obj
-            else:
-                break
-
+    similarities = np.zeros((n, n))
+    similarities[triu_ix] = similarities.T[triu_ix] = w
+    print(similarities, w)
     print(k)
     print(z)
     print(w[:10])

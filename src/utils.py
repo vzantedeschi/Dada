@@ -99,6 +99,21 @@ def rotation_angle(axis):
 
     return angle
 
+def kalo_utils(n):
+
+    n_pairs = n * (n - 1) // 2
+    S = np.zeros((n, n_pairs))
+    k = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            S[i, k] = 1
+            S[j, k] = 1
+            k += 1
+
+    triu_ix = np.triu_indices(n, 1)
+
+    return S, triu_ix
+
 # ---------------------------------------------------------------------- LOAD DATASETS
 
 DATASET_PATH = os.path.join("datasets")
@@ -445,7 +460,6 @@ def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=5e-2, sam
     
     rng = np.random.RandomState(rnd_state)
 
-    nb_clusters = 3
     nodes_per_clust = [10, 20, 30, 40]
     max_samples_per_clust = [20, 15, 10, 5]
     axes_clust = [np.asarray([1, 1]), np.asarray([-1, 1]), np.asarray([1, -1]), np.asarray([-1, -1])]

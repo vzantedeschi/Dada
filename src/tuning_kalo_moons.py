@@ -23,7 +23,7 @@ BETA = 10
 CV_SPLITS = 3
 MU_LIST = [10**i for i in range(-3, 3)]
 LA_LIST = [10**i for i in range(-3, 3)]
-NU_LIST = [10**i for i in range(-3, 3)]
+# NU_LIST = [10**i for i in range(-3, 3)]
 
 _, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=K, random_state=random_state)
 _, X, Y, X_test, Y_test, max_nb_instances = generate_moons(K, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)

@@ -56,19 +56,19 @@ def kalo_graph_discovery(nodes, S, triu_ix, mu=1, nu=1, la=1, *args):
     w = np.ones(n_pairs)
     d = S.dot(w)
 
-    gamma = 1 / (np.linalg.norm(l.dot(S)) + mu * np.linalg.norm(z) / 2 + nu * np.linalg.norm(S.T.dot(S)) + 2 * la)
-    obj = obj_kalo(w, z, S, l, mu, la)
+    gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2)))
+    obj = obj_kalo(w, z, S, l, mu, nu, la)
 
     for k in range(1, 20000):
 
-        grad = l.dot(S) + mu * z / 2 - nu * (1. / d).dot(S) + 2 * la * w
+        grad = l.dot(S) + (mu / 2) * (z - (1. / d).dot(S) + 2 * la * (mu / 2) * w)
 
         new_w = w - gamma * grad
         new_w[new_w < 0] = 0
 
         if k % 100 == 0:
 
-            new_obj = obj_kalo(new_w, z, S, l, mu, la)
+            new_obj = obj_kalo(new_w, z, S, l, mu, nu, la)
 
             if np.isinf(new_obj):
                 gamma *= 0.1 

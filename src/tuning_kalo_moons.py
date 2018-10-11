@@ -6,7 +6,7 @@ from statistics import mean
 from classification import get_stumps
 from evaluation import central_test_accuracy
 from network import null_graph
-from optimization import gd_reg_local_FW, local_FW, kalo_graph_discovery
+from optimization import gd_reg_local_FW
 from utils import generate_models, generate_moons, get_split_per_list, get_min_max, kalo_utils
 
 # set graph of nodes with local personalized data
@@ -33,9 +33,6 @@ results = {}.fromkeys(itertools.product(MU_LIST, LA_LIST), 0.)
 vmin, vmax = get_min_max(X)
 base_clfs = get_stumps(n=B, d=D, min_v=vmin, max_v=vmax)
 
-local_nodes = null_graph(X, Y, X_test, Y_test, K, max_nb_instances)
-local_FW(local_nodes, base_clfs, beta=BETA, nb_iter=NB_ITER, monitors={})
-
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
     train_x, test_x, train_y, test_y = [], [], [], []
@@ -59,7 +56,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
             print(mu, la)
 
             nodes_copy = deepcopy(nodes)
-            gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"kalo", "pace_gd": STEP, "args":(mu, 1, la)}, beta=BETA, mu=mu, nb_iter=NB_ITER, monitors={})
+            gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"kalo", "pace_gd": STEP, "args":(mu, la)}, beta=BETA, mu=mu, nb_iter=NB_ITER, monitors={})
 
             results[(mu, la)] += central_test_accuracy(nodes_copy)
 

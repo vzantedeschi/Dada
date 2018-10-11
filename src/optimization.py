@@ -6,7 +6,6 @@ from sklearn.neighbors import NearestNeighbors
 
 from classification import get_double_basis
 from evaluation import losses
-from kalofolias import obj_kalo
 from network import centralize_data, set_edges, get_alphas
 from utils import square_root_matrix, get_adj_matrix, stack_results, kalo_utils
 
@@ -41,7 +40,17 @@ def graph_discovery(nodes, k=1, *args):
 
     return res
 
-def kalo_graph_discovery(nodes, S, triu_ix, mu=1, nu=1, la=1, *args):
+def obj_kalo(w, z, S, l, mu, la):
+
+    d = S.dot(w)
+
+    # print("kalo", d.dot(l), mu * w.dot(z) / 2, - np.log(d).sum(), b * w.dot(w))
+    if np.count_nonzero(d) < len(d):
+        return np.inf
+
+    return d.dot(l) + (mu / 2) * (w.dot(z) - np.log(d).sum() + la * (mu / 2) * w.dot(w))
+
+def kalo_graph_discovery(nodes, S, triu_ix, mu=1, la=1, *args):
 
     stop_thresh = 10e-3
 
@@ -57,7 +66,7 @@ def kalo_graph_discovery(nodes, S, triu_ix, mu=1, nu=1, la=1, *args):
     d = S.dot(w)
 
     gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2)))
-    obj = obj_kalo(w, z, S, l, mu, nu, la)
+    obj = obj_kalo(w, z, S, l, mu, la)
 
     for k in range(1, 20000):
 
@@ -66,24 +75,23 @@ def kalo_graph_discovery(nodes, S, triu_ix, mu=1, nu=1, la=1, *args):
         new_w = w - gamma * grad
         new_w[new_w < 0] = 0
 
-        if k % 100 == 0:
+        new_obj = obj_kalo(new_w, z, S, l, mu, la)
+        # print(gamma, new_obj)
+        if new_obj > obj:
+            gamma /= 2
+            # print("inf")
 
-            new_obj = obj_kalo(new_w, z, S, l, mu, nu, la)
+        elif abs(obj - new_obj) > abs(stop_thresh * obj):
+            obj = new_obj
+            w = new_w
+            gamma *= 1.05
 
-            if np.isinf(new_obj):
-                gamma *= 0.1 
-                # print("inf")
-
-            elif abs(obj - new_obj) > abs(stop_thresh * obj):
-                obj = new_obj
-                w = new_w
-
-            else:
-                w = new_w
-                break
+        else:
+            w = new_w
+            break
         
         d = S.dot(w)
-
+    # print("done in", k)
     similarities = np.zeros((n, n))
     similarities[triu_ix] = similarities.T[triu_ix] = w
 
@@ -283,15 +291,23 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, 
 
     # iterations = [0] * N
 
-    # get margin matrices A
+    # start from local models
+    local_FW(nodes, base_clfs, beta=beta, nb_iter=nb_iter, monitors={})
+
+    # init graph
+    similarities = gd_function(nodes, *gd_args)
+    adj_matrix = get_adj_matrix(similarities, 1e-3)
+
+    # get margin matrices A and reinit local models and graph
     for n in nodes:
-        n.init_matrices(base_clfs, n.alpha)
+        n.init_matrices(base_clfs)
+    set_edges(nodes, similarities, adj_matrix)
 
     stack_results(nodes, results, 0, monitors)
 
     duals = [0] * N
 
-    for t in range(nb_iter):
+    for t in range(1, nb_iter+1):
 
         if t % gd_pace == 0:
 

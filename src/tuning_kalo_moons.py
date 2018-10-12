@@ -20,31 +20,33 @@ NOISE_R = 0.05
 random_state = 2017
 BETA = 10
 
-CV_SPLITS = 3
+ITER = 3
 MU_LIST = [10**i for i in range(-3, 3)]
 LA_LIST = [10**i for i in range(-3, 3)]
 # NU_LIST = [10**i for i in range(-3, 3)]
 
-_, theta_true, cluster_indexes = generate_models(nb_clust=1, nodes_per_clust=K, random_state=random_state)
-_, X, Y, X_test, Y_test, max_nb_instances = generate_moons(K, theta_true, D, random_state=random_state, sample_error_rate=NOISE_R)
-
 results = {}.fromkeys(itertools.product(MU_LIST, LA_LIST), 0.)
 
-vmin, vmax = get_min_max(X)
-base_clfs = get_stumps(n=B, d=D, min_v=vmin, max_v=vmax)
+for i in range(ITER):
+    _, theta_true, _ = generate_models(nb_clust=1, nodes_per_clust=K, random_state=random_state * i)
+    _, train_x, train_y, test_x, test_y, max_nb_instances = generate_moons(K, theta_true, D, random_state=random_state * i, sample_error_rate=NOISE_R)
 
-for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
-
-    train_x, test_x, train_y, test_y = [], [], [], []
-
-    for i, inds in enumerate(indices):
-        train_x.append(X[i][inds[0]])
-        test_x.append(X[i][inds[1]])
-        train_y.append(Y[i][inds[0]])
-        test_y.append(Y[i][inds[1]])
 
     vmin, vmax = get_min_max(train_x)
     base_clfs = get_stumps(n=B, d=D, min_v=vmin, max_v=vmax)
+
+# for indices in get_split_per_list(X, ITER, rnd_state=random_state):
+
+#     train_x, test_x, train_y, test_y = [], [], [], []
+
+#     for i, inds in enumerate(indices):
+#         train_x.append(X[i][inds[0]])
+#         test_x.append(X[i][inds[1]])
+#         train_y.append(Y[i][inds[0]])
+#         test_y.append(Y[i][inds[1]])
+
+#     vmin, vmax = get_min_max(train_x)
+#     base_clfs = get_stumps(n=B, d=D, min_v=vmin, max_v=vmax)
 
     # set graph
     nodes = null_graph(train_x, train_y, test_x, test_y, K, max_nb_instances)

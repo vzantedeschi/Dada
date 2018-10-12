@@ -25,7 +25,7 @@ def loss(nodes, *args):
 def losses(nodes, *args):
     return [n.confidence * log(np.sum(n.compute_weights(distr=False))) for n in nodes]
 
-def kalo_objective(nodes, mu, nu, la, w, *args):
+def kalo_objective(nodes, mu, la, w, *args):
 
     try:
         z = compute_alpha_diff(nodes)
@@ -34,7 +34,6 @@ def kalo_objective(nodes, mu, nu, la, w, *args):
 
         return d.dot(l) + (mu / 2) * (np.multiply(w, z).sum() - np.log(d).sum() + la * (mu / 2) * LA.norm(w, 'fro')**2)
     except:
-        print("kalo inf")
         return np.inf
 
 def central_loss(nodes, *args):

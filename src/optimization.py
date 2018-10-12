@@ -68,7 +68,7 @@ def kalo_graph_discovery(nodes, S, triu_ix, mu=1, la=1, *args):
     gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2)))
     obj = obj_kalo(w, z, S, l, mu, la)
 
-    for k in range(1, 20000):
+    for k in range(20000):
 
         grad = l.dot(S) + (mu / 2) * (z - (1. / d).dot(S) + 2 * la * (mu / 2) * w)
 

@@ -1,4 +1,4 @@
-from copy import deepcopy
+nfrom copy import deepcopy
 import numpy as np
 from statistics import mean
 

@@ -52,7 +52,7 @@ def obj_kalo(w, z, S, l, mu, la):
 
 def kalo_graph_discovery(nodes, S, triu_ix, mu=1, la=1, *args):
 
-    stop_thresh = 10e-3
+    stop_thresh = 10e-4
 
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
@@ -68,7 +68,7 @@ def kalo_graph_discovery(nodes, S, triu_ix, mu=1, la=1, *args):
     gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2)))
     obj = obj_kalo(w, z, S, l, mu, la)
 
-    for k in range(20000):
+    for k in range(2000):
 
         grad = l.dot(S) + (mu / 2) * (z - (1. / d).dot(S) + 2 * la * (mu / 2) * w)
 
@@ -85,12 +85,16 @@ def kalo_graph_discovery(nodes, S, triu_ix, mu=1, la=1, *args):
             obj = new_obj
             w = new_w
             gamma *= 1.05
+            # print(k, obj)
 
         else:
             w = new_w
             break
         
         d = S.dot(w)
+
+    # print(k, new_obj)
+
     # print("done in", k)
     similarities = np.zeros((n, n))
     similarities[triu_ix] = similarities.T[triu_ix] = w

@@ -1,28 +1,28 @@
 from copy import deepcopy
 import itertools
-import numpy as np
-from statistics import mean
 
 from classification import get_stumps
-from evaluation import central_test_accuracy, edges
-from network import null_graph, graph
-from optimization import gd_reg_local_FW, regularized_local_FW
+from evaluation import central_test_accuracy
+from network import null_graph
+from optimization import gd_reg_local_FW
 from utils import load_school, get_split_per_list, get_min_max
 
 # set graph of nodes with local personalized data
 
 NB_ITER = 10000
 B = 112
+BETA = 1
 random_state = 2018
 
 CV_SPLITS = 3
 MU_LIST = [10**i for i in range(-3, 3)]
-BETA_LIST = [10**i for i in range(3)]
+LA_LIST = [10**i for i in range(-3, 3)]
+STEP = 500
 
 X, Y, _, _, adjacency, distances, K, max_nb_instances = load_school(thr=20)
 D = X[0].shape[1]
 
-results = {}.fromkeys(itertools.product(MU_LIST, BETA_LIST), 0.)
+results = {}.fromkeys(itertools.product(MU_LIST, LA_LIST), 0.)
 
 for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
 
@@ -38,19 +38,17 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
     base_clfs = get_stumps(n=B, d=D, min_v=vmin, max_v=vmax)
 
     # get nodes
-    # nodes = null_graph(train_x, train_y, test_x, test_y, N, max_nb_instances)
-    nodes = graph(train_x, train_y, test_x, test_y, K, adjacency, distances, max_nb_instances)
+    nodes = null_graph(train_x, train_y, test_x, test_y, K, max_nb_instances)
 
     for mu in MU_LIST:
 
-        for beta in BETA_LIST:
+        for la in LA_LIST:
 
-            print(mu, beta)
+            print(mu, la)
 
             nodes_copy = deepcopy(nodes)
-            # gd_reg_local_FW(nodes_copy, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd": STEP, "args":(Q)}, beta=beta, mu=mu, nb_iter=NB_ITER, reset_step=False, monitors={})
-            regularized_local_FW(nodes_copy, base_clfs, nb_iter=NB_ITER, beta=beta, mu=mu, monitors={})
+            gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"kalo", "pace_gd": STEP, "args":(mu, la)}, beta=BETA, mu=mu, nb_iter=NB_ITER, monitors={})
 
-            results[(mu, beta)] += central_test_accuracy(nodes_copy)
+            results[(mu, la)] += central_test_accuracy(nodes_copy)
 
-print("best mu, beta:", max(results, key=results.get))
+print("best mu, la:", max(results, key=results.get))

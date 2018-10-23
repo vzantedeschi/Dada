@@ -29,7 +29,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
     for mu in MU_LIST:
 
         print(mu)
-        linear, _ = colearning(K, train_x, train_y, test_x, test_y, D, NB_ITER, adjacency, distances, mu=mu, max_samples_per_node=max_nb_instances, checkevery=10000)
+        linear, _ = colearning(K, train_x, train_y, test_x, test_y, D, NB_ITER, adjacency, distances, mu=mu, max_samples_per_node=max_nb_instances, checkevery=NB_ITER-1)
 
         results[mu] += linear[-1]["test-accuracy"]
 

@@ -52,10 +52,9 @@ def obj_kalo(w, z, S, l, mu, la):
 
 def kalo_graph_discovery(nodes, S, triu_ix, mu=1, la=1, *args):
 
-    stop_thresh = 10e-4
-
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
+    stop_thresh = 10e-3 / n_pairs
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[triu_ix]

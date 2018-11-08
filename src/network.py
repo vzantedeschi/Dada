@@ -238,6 +238,39 @@ def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true, max_nb_instances
 
     return nodes, adj_matrix, similarities
 
+def graph(x, y, x_test, y_test, nb_nodes, adj_matrix, similarities, max_nb_instances):
+
+    nodes = list()
+    nei_ids = list()
+    nei_sim = list()
+
+    for i in range(nb_nodes):
+
+        # add offset
+        M, _ = x[i].shape
+        x_copy = np.c_[x[i], np.ones(M)]
+        M, _ = x_test[i].shape
+        x_test_copy = np.c_[x_test[i], np.ones(M)]
+
+        n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
+        nb_instances = len(x[i])
+        n.confidence = nb_instances / max_nb_instances
+
+        nei_ids.append([])
+        nei_sim.append([])
+        for j, a in enumerate(adj_matrix[i]):
+            if a != 0:
+                nei_ids[i].append(j)
+                nei_sim[i].append(similarities[i][j])
+        nodes.append(n)
+
+    for ids, sims, n in zip(nei_ids, nei_sim, nodes):
+        n.set_neighbors([nodes[i] for i in ids], sims)
+        n.sum_similarities = sum(sims)
+
+    return nodes
+
+
 def null_graph(x, y, x_test, y_test, nb_nodes, max_nb_instances):
 
     nodes = list()

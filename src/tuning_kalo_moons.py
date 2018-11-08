@@ -10,9 +10,9 @@ from optimization import gd_reg_local_FW
 from utils import generate_models, generate_moons, get_split_per_list, get_min_max, kalo_utils
 
 # set graph of nodes with local personalized data
-NB_ITER = 10000 # 10000 for 100 nodes
+NB_ITER = 10000 # for 100 nodes
 K = 100 # 100 for 100 nodes
-STEP = 500 # 500 for 100 nodes
+STEP = 300 # 500 for 100 nodes
 
 D = 20
 B = 200
@@ -23,6 +23,8 @@ BETA = 10
 ITER = 3
 MU_LIST = [10**i for i in range(-3, 3)]
 LA_LIST = [10**i for i in range(-3, 3)]
+# MU_LIST = [10**i for i in range(1)]
+# LA_LIST = [10**i for i in range(1)]
 # NU_LIST = [10**i for i in range(-3, 3)]
 
 results = {}.fromkeys(itertools.product(MU_LIST, LA_LIST), 0.)

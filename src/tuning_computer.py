@@ -11,7 +11,7 @@ from utils import load_computer, get_split_per_list, get_min_max
 
 NB_ITER = 5000
 B = 28
-BETA = 10
+BETA = 1
 random_state = 72018
 
 CV_SPLITS = 3

@@ -284,8 +284,6 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
 
 def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, monitors=None, checkevery=1):
 
-    from evaluation import kalo_objective
-
     results = []
     N = len(nodes)
 

@@ -15,7 +15,7 @@ Boosting algorithms using Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def graph_discovery(nodes, k=1, *args):
+def graph_discovery(nodes, similarities, k=1, *args):
     
     N = len(nodes)
 
@@ -50,23 +50,27 @@ def obj_kalo(w, z, S, l, mu, la):
 
     return d.dot(l) + (mu / 2) * (w.dot(z) - np.log(d).sum() + la * (mu / 2) * w.dot(w))
 
-def kalo_graph_discovery(nodes, S, triu_ix, mu=1, la=1, *args):
+def kalo_graph_discovery(nodes, similarities, S, triu_ix, mu=1, la=1, *args):
 
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
-    stop_thresh = 10e-3 / n_pairs
+    stop_thresh = 10e-2 / n_pairs
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[triu_ix]
 
     l = np.asarray(losses(nodes))
 
-    w = np.ones(n_pairs)
+    if similarities is not None:
+        w = np.asarray(similarities[triu_ix])
+    else:
+        w = np.ones(n_pairs)
     d = S.dot(w)
 
     gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2)))
     obj = obj_kalo(w, z, S, l, mu, la)
-
+# 
+    # print('\n', 0, obj)
     for k in range(2000):
 
         grad = l.dot(S) + (mu / 2) * (z - (1. / d).dot(S) + 2 * la * (mu / 2) * w)
@@ -280,6 +284,8 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
 
 def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, monitors=None, checkevery=1):
 
+    from evaluation import kalo_objective
+
     results = []
     N = len(nodes)
 
@@ -298,7 +304,7 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, 
     local_FW(nodes, base_clfs, beta=beta, nb_iter=nb_iter, monitors={})
 
     # init graph
-    similarities = gd_function(nodes, *gd_args)
+    similarities = gd_function(nodes, None, *gd_args)
     adj_matrix = get_adj_matrix(similarities, 1e-3)
 
     # get margin matrices A and reinit local models and graph
@@ -315,7 +321,7 @@ def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, 
         if t % gd_pace == 0:
 
             # graph discovery
-            similarities = gd_function(nodes, *gd_args)
+            similarities = gd_function(nodes, similarities, *gd_args)
             adj_matrix = get_adj_matrix(similarities, 1e-3)
             set_edges(nodes, similarities, adj_matrix)
 

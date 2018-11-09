@@ -38,7 +38,7 @@ for indices in get_split_per_list(X, CV_SPLITS, rnd_state=random_state):
         for la in LA_LIST:
 
             print(mu, la)
-            linear, _ = alternating_colearning(K, train_x, train_y, test_x, test_y, D, NB_ITER, mu=mu, la=la, max_samples_per_node=max_nb_instances)
+            linear, _ = alternating_colearning(K, train_x, train_y, test_x, test_y, D, NB_ITER, mu=mu, la=la, max_samples_per_node=max_nb_instances, checkevery=NB_ITER-1)
 
             results[(mu, la)] += linear[-1]["test-accuracy"]
 

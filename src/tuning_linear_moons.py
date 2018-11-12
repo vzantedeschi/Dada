@@ -6,16 +6,16 @@ from related_works import alternating_colearning, colearning
 from utils import generate_models, generate_moons
 
 # set graph of nodes with local personalized data
-NB_ITER = 100 # for 100 nodes
-K = 20 # 100 for 100 nodes
-STEP = 10 # 500 for 100 nodes
+NB_ITER = 500
+K = 100
+STEP = 50
 
 D = 20
 NOISE_R = 0.05
 random_state = 2018
 
 ITER = 3
-MU_LIST = [10**i for i in range(-3, 2)]
+MU_LIST = [10**i for i in range(-3, 3)]
 LA_LIST = [10**i for i in range(-3, 3)]
 # MU_LIST = [10**i for i in range(1)]
 # LA_LIST = [10**i for i in range(1)]
@@ -42,9 +42,8 @@ for i in range(2, ITER+2):
         # #uncomment for learning only models
         # la = 1
         # linear, _ = colearning(K, train_x, train_y, test_x, test_y, D, NB_ITER, adj_matrix, similarities, mu, max_nb_instances, checkevery=NB_ITER-1)
-
         
 
-        results[(mu, la)] += linear[-1]["test-accuracy"]
+        # results[(mu, la)] += linear[-1]["test-accuracy"]
 
 print("best mu, la:", max(results, key=results.get))

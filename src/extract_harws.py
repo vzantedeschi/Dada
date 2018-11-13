@@ -7,13 +7,13 @@ LABELS = {
     "WALKING": 1,
     "WALKING_UPSTAIRS": 1, 
     "WALKING_DOWNSTAIRS": 1, 
-    "STANDING": 0,
-    "SITTING": 0, 
-    "LAYING": 0
+    "STANDING": -1,
+    "SITTING": -1, 
+    "LAYING": -1
 }
 
 K = 30
-train_ratio = 0.3
+train_ratio = 0.02
 rnd_state = 13112018
 
 train_df = pd.read_csv('datasets/human-activity-recognition-with-smartphones/train.csv')

@@ -15,7 +15,7 @@ NOISE_R = 0.05
 random_state = 2018
 
 ITER = 3
-MU_LIST = [10**i for i in range(-3, 3)]
+MU_LIST = [10**i for i in range(-3, 0)]
 LA_LIST = [10**i for i in range(-3, 3)]
 # MU_LIST = [10**i for i in range(1)]
 # LA_LIST = [10**i for i in range(1)]

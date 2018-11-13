@@ -218,6 +218,34 @@ def load_computer(path=DATASET_PATH, thr=5, max_train_ratio=0.50, rnd_state=2018
 
     return x_train, y_train, x_test, y_test, 190, nb_train
 
+def load_harws(path=DATASET_PATH):
+
+    import pandas as pd
+
+    nb_nodes = 30
+    train_f = os.path.join(path, "harws_train.csv")
+    train = pd.read_csv(train_f)
+
+    test_f = os.path.join(path, "harws_test.csv")
+    test = pd.read_csv(test_f)
+
+    train_x, train_y, test_x, test_y = [], [], [], []
+
+    for k in range(1, nb_nodes+1):
+
+        node_train_idx = train['subject'] == k
+        node_test_idx = test['subject'] == k
+
+        train_x.append(np.array(train.loc[node_train_idx].iloc[:, 1:-2], dtype=np.float32))
+        train_y.append(np.array(train.loc[node_train_idx].iloc[:, -1], dtype=np.int))
+
+        test_x.append(np.array(test.loc[node_test_idx].iloc[:, 1:-2], dtype=np.float32))
+        test_y.append(np.array(test.loc[node_test_idx].iloc[:, -1], dtype=np.int))
+
+    max_nb_instances = max(map(len, train_x))
+
+    return train_x, train_y, test_x, test_y, nb_nodes, max_nb_instances
+
 def load_mobiact(path=DATASET_PATH):
 
     import pandas as pd

@@ -13,7 +13,6 @@ LABELS = {
 }
 
 K = 30
-train_ratio = 0.02
 rnd_state = 13112018
 
 train_df = pd.read_csv('datasets/human-activity-recognition-with-smartphones/train.csv')
@@ -34,36 +33,37 @@ print(df['subject'].value_counts())
 print("\ninstances per task")
 print(df['Activity'].value_counts())
 
-# # binarize problem
-# df.Activity.replace(LABELS, inplace=True)
-# print(df['Activity'].value_counts())
+# binarize problem
+df.Activity.replace(LABELS, inplace=True)
+print(df['Activity'].value_counts())
 
-# #create train and test
-# train, test = train_test_split(df, train_size=train_ratio, random_state=rnd_state)
+#create train and test
+train, test = train_test_split(df, train_size=0.02, random_state=rnd_state)
 
-# print("\nTRAIN")
-# print("nb instances= {}, nb features= {}".format(train.shape[0], train.shape[1]-2))
+print("\nTRAIN")
+print("nb instances= {}, nb features= {}".format(train.shape[0], train.shape[1]-2))
 
-# # count by activity
-# print("\ninstances per task")
-# print(train['Activity'].value_counts())
+# count by activity
+print("\ninstances per task")
+print(train['Activity'].value_counts())
 
-# assert train['subject'].nunique() == K
+assert train['subject'].nunique() == K
 
-# print("\nTEST")
-# print("nb instances= {}, nb features= {}".format(test.shape[0], test.shape[1]-2))
+print("\nTEST")
+print("nb instances= {}, nb features= {}".format(test.shape[0], test.shape[1]-2))
 
-# # count by acitivity
-# print("\ninstances per task")
-# print(test['Activity'].value_counts())
+# count by acitivity
+print("\ninstances per task")
+print(test['Activity'].value_counts())
 
-# assert test['subject'].nunique() == K
+assert test['subject'].nunique() == K
 
-# #save splits
-# train.to_csv("datasets/harws_train.csv")
-# test.to_csv("datasets/harws_test.csv")
+#save splits
+train.to_csv("datasets/harws_train.csv")
+test.to_csv("datasets/harws_test.csv")
 
 ### second problem: WALKING_UPSTAIRS vs walking WALKING_DOWNSTAIRS
+df = pd.concat([train_df, test_df])
 df = df[(df["Activity"] == "WALKING_DOWNSTAIRS") | (df["Activity"] == "WALKING_UPSTAIRS")]
 
 print("nb instances= {}, nb features= {}".format(df.shape[0], df.shape[1]-2))

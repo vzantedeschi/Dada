@@ -494,7 +494,7 @@ def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=5e-2, sam
     rng = np.random.RandomState(rnd_state)
 
     nodes_per_clust = [10, 20, 30, 40]
-    max_samples_per_clust = [20, 15, 10, 5]
+    max_samples_per_clust = [25, 20, 15, 10]
     axes_clust = [np.asarray([1, 1]), np.asarray([-1, 1]), np.asarray([1, -1]), np.asarray([-1, -1])]
     nb_nodes = sum(nodes_per_clust)
     

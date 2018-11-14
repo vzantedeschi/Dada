@@ -7,9 +7,9 @@ from network import null_graph
 from optimization import gd_reg_local_FW
 from utils import load_harws, get_split_per_list, get_min_max
 
-NB_ITER = 100
+NB_ITER = 300
 B = 1122
-BETA = 10
+BETA = 50
 random_state = 72018
 
 CV_SPLITS = 2
@@ -20,7 +20,7 @@ LA_LIST = [10**i for i in range(-3, 3)]
 # LA_LIST = [1]
 STEP = 10
 
-X, Y, _, _, N, max_nb_instances = load_harws()
+X, Y, _, _, N, max_nb_instances = load_harws(walking=True)
 D = X[0].shape[1]
 
 results = {}.fromkeys(itertools.product(MU_LIST, LA_LIST), 0.)

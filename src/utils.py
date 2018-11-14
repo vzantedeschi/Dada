@@ -218,15 +218,20 @@ def load_computer(path=DATASET_PATH, thr=5, max_train_ratio=0.50, rnd_state=2018
 
     return x_train, y_train, x_test, y_test, 190, nb_train
 
-def load_harws(path=DATASET_PATH):
+def load_harws(path=DATASET_PATH, walking=False):
 
     import pandas as pd
 
+    if walking:
+        append = "_walking"
+    else:
+        append = ""
+
     nb_nodes = 30
-    train_f = os.path.join(path, "harws_train.csv")
+    train_f = os.path.join(path, "harws_train{}.csv".format(append))
     train = pd.read_csv(train_f)
 
-    test_f = os.path.join(path, "harws_test.csv")
+    test_f = os.path.join(path, "harws_test{}.csv".format(append))
     test = pd.read_csv(test_f)
 
     train_x, train_y, test_x, test_y = [], [], [], []

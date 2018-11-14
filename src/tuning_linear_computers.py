@@ -7,7 +7,7 @@ from utils import load_computer, get_split_per_list
 
 # set graph of nodes with local personalized data
 
-NB_ITER = 100
+NB_ITER = 10000
 random_state = 72018
 
 CV_SPLITS = 3
@@ -16,7 +16,7 @@ LA_LIST = [10**i for i in range(-3, 3)]
 # MU_LIST = [0.1]
 # LA_LIST = [10]
 
-STEP = 10
+STEP = 500
 
 X, Y, X_test, Y_test, K, max_nb_instances = load_computer()
 D = X[0].shape[1]

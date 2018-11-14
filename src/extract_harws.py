@@ -30,21 +30,55 @@ print("nb instances= {}, nb features= {}".format(df.shape[0], df.shape[1]-2))
 print("\ninstances per agent")
 print(df['subject'].value_counts())
 
-# count by acitivity
+# count by activity
 print("\ninstances per task")
 print(df['Activity'].value_counts())
 
+# # binarize problem
+# df.Activity.replace(LABELS, inplace=True)
+# print(df['Activity'].value_counts())
+
+# #create train and test
+# train, test = train_test_split(df, train_size=train_ratio, random_state=rnd_state)
+
+# print("\nTRAIN")
+# print("nb instances= {}, nb features= {}".format(train.shape[0], train.shape[1]-2))
+
+# # count by activity
+# print("\ninstances per task")
+# print(train['Activity'].value_counts())
+
+# assert train['subject'].nunique() == K
+
+# print("\nTEST")
+# print("nb instances= {}, nb features= {}".format(test.shape[0], test.shape[1]-2))
+
+# # count by acitivity
+# print("\ninstances per task")
+# print(test['Activity'].value_counts())
+
+# assert test['subject'].nunique() == K
+
+# #save splits
+# train.to_csv("datasets/harws_train.csv")
+# test.to_csv("datasets/harws_test.csv")
+
+### second problem: WALKING_UPSTAIRS vs walking WALKING_DOWNSTAIRS
+df = df[(df["Activity"] == "WALKING_DOWNSTAIRS") | (df["Activity"] == "WALKING_UPSTAIRS")]
+
+print("nb instances= {}, nb features= {}".format(df.shape[0], df.shape[1]-2))
+
 # binarize problem
-df.Activity.replace(LABELS, inplace=True)
+df.Activity.replace(["WALKING_DOWNSTAIRS", "WALKING_UPSTAIRS"], [-1, 1], inplace=True)
 print(df['Activity'].value_counts())
 
 #create train and test
-train, test = train_test_split(df, train_size=train_ratio, random_state=rnd_state)
+train, test = train_test_split(df, train_size=0.3, random_state=rnd_state)
 
 print("\nTRAIN")
 print("nb instances= {}, nb features= {}".format(train.shape[0], train.shape[1]-2))
 
-# count by acitivity
+# count by activity
 print("\ninstances per task")
 print(train['Activity'].value_counts())
 
@@ -60,5 +94,5 @@ print(test['Activity'].value_counts())
 assert test['subject'].nunique() == K
 
 #save splits
-train.to_csv("datasets/harws_train.csv")
-test.to_csv("datasets/harws_test.csv")
+train.to_csv("datasets/harws_train_walking.csv")
+test.to_csv("datasets/harws_test_walking.csv")

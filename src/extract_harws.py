@@ -73,7 +73,7 @@ df.Activity.replace(["WALKING_DOWNSTAIRS", "WALKING_UPSTAIRS"], [-1, 1], inplace
 print(df['Activity'].value_counts())
 
 #create train and test
-train, test = train_test_split(df, train_size=0.05, random_state=rnd_state)
+train, test = train_test_split(df, train_size=0.08, random_state=rnd_state)
 
 print("\nTRAIN")
 print("nb instances= {}, nb features= {}".format(train.shape[0], train.shape[1]-2))

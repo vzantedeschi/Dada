@@ -489,7 +489,7 @@ def generate_samples(n, theta_true, dim, min_samples_per_node=3, max_samples_per
 
     return n_samples, x, y, x_test, y_test, max_nb_local_insts
 
-def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=5e-2, sample_error_rate=5e-2, intra_clust_stdev=1e-1, rnd_state=1):
+def generate_fixed_moons(dim, test_samples_per_node=100, samples_stdev=5e-2, sample_error_rate=5e-2, intra_clust_stdev=3e-1, rnd_state=1):
     
     rng = np.random.RandomState(rnd_state)
 

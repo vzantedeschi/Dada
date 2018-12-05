@@ -25,6 +25,9 @@ def loss(nodes, *args):
 def losses(nodes, *args):
     return [n.confidence * log(np.sum(n.compute_weights(distr=False))) for n in nodes]
 
+def losses_no_conf(nodes, *args):
+    return [log(np.sum(n.compute_weights(distr=False))) for n in nodes]
+
 def kalo_objective(nodes, mu, la, w, *args):
 
     try:

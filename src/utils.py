@@ -110,9 +110,16 @@ def kalo_utils(n):
             S[j, k] = 1
             k += 1
 
+    map_idx = np.ones((n, n), dtype=int)
+    k = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            map_idx[i, j] = k
+            k += 1
+
     triu_ix = np.triu_indices(n, 1)
 
-    return S, triu_ix
+    return S, triu_ix, map_idx
 
 # ---------------------------------------------------------------------- LOAD DATASETS
 

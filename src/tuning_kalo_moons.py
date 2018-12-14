@@ -21,11 +21,10 @@ random_state = 2018
 BETA = 10
 
 ITER = 3
-MU_LIST = [10**i for i in range(-3, 3)]
-LA_LIST = [10**i for i in range(-3, 3)]
-# MU_LIST = [10**i for i in range(1)]
-# LA_LIST = [10**i for i in range(1)]
-# NU_LIST = [10**i for i in range(-3, 3)]
+# MU_LIST = [10**i for i in range(-3, 3)]
+# LA_LIST = [10**i for i in range(-3, 3)]
+LA_LIST = [10**i for i in range(1)]
+MU_LIST = [10**i for i in range(1)]
 
 results = {}.fromkeys(itertools.product(MU_LIST, LA_LIST), 0.)
 
@@ -46,8 +45,9 @@ for i in range(2, ITER+2):
             print(mu, la)
 
             nodes_copy = deepcopy(nodes)
-            gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"kalo", "pace_gd": STEP, "args":(mu, la)}, beta=BETA, mu=mu, nb_iter=NB_ITER, monitors={})
+            gd_reg_local_FW(nodes_copy, base_clfs, gd_method={"name":"block_kalo", "pace_gd": STEP, "args":(mu, la, 5)}, beta=BETA, mu=mu, nb_iter=NB_ITER, monitors={})
 
             results[(mu, la)] += central_test_accuracy(nodes_copy)
 
+print(results)
 print("best mu, la:", max(results, key=results.get))

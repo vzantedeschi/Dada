@@ -50,7 +50,7 @@ def obj_kalo(w, z, S, l, mu, la):
 
     return d.dot(l) + (mu / 2) * (w.dot(z) - np.log(d).sum() + la * (mu / 2) * w.dot(w))
 
-def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, *args):
+def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, **kwargs):
 
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
@@ -104,11 +104,17 @@ def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, *
 
     return similarities
 
-def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, *args):
+def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, **kwargs):
+
+    monitor = False
+    for key, value in kwargs.items():
+        if key == "monitor" and value == True:
+            monitor = True
+            results = []
 
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
-    stop_thresh = 10e-6
+    stop_thresh = 10e-9
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[triu_ix]
@@ -124,11 +130,14 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2)))
     obj = obj_kalo(w, z, S, l, mu, la)
 
+    if monitor:
+        results.append(obj)
+
     w, new_w = np.ones(n_pairs), np.ones(n_pairs)
 
     grad = np.zeros(kappa)
-    print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
-    for k in range(2000):
+    # print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
+    for k in range(10000):
 
         rnd_j = np.random.choice(n, 1+kappa)
         i, others = rnd_j[0], rnd_j[1:]
@@ -147,26 +156,33 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
 
         # print("new obj=", new_obj)
 
-        if new_obj > obj and (gamma / 2) > 0:
-            gamma /= 2
+        if new_obj > obj:
+            gamma = max(stop_thresh, gamma / 2)
 
-        elif abs(obj - new_obj) > abs(stop_thresh * obj):
+        elif abs(obj - new_obj) > abs(stop_thresh * obj * kappa / n):
             obj = new_obj
             w = new_w
             gamma *= 1.05
             # print(k, obj)
 
-        else:
+        # if monitoring obj function, continue even if optimality has been reached  
+        elif not monitor:
             w = new_w
             break
+
+        if monitor:
+            results.append(obj)
         
         d = S.dot(w)
 
-    print(k, new_obj)
+    # print(k, new_obj)
 
     # print("done in", k)
     similarities = np.zeros((n, n))
     similarities[triu_ix] = similarities.T[triu_ix] = w
+
+    if monitor:
+        return similarities, results
 
     return similarities
 

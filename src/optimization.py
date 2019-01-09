@@ -40,11 +40,11 @@ def graph_discovery(nodes, similarities, k=1, *args):
 
     return res
 
-def obj_kalo(w, z, S, l, mu, la):
+def obj_kalo(w, z, S, l, mu, la, eps=10e-3):
 
     d = S.dot(w)
 
-    if np.any(d == 0):
+    if np.any(d < 0):
         return np.inf
 
     return d.dot(l) + (mu / 2) * (w.dot(z) - np.log(d).sum() + la * (mu / 2) * w.dot(w))
@@ -113,7 +113,9 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
 
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
-    stop_thresh = 10e-12
+    stop_thresh = 10e-30
+    min_gamma = 10e-6
+    max_iter = 10000
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[triu_ix]
@@ -125,7 +127,7 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     else:
         w = 0.01 * (1 / np.maximum(z, 1))
 
-    gamma = n / (kappa * (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2))))
+    gamma = 0.5
 
     obj = obj_kalo(w, z, S, l, mu, la)
 
@@ -133,9 +135,10 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
         results.append(obj)
 
     cur_obj = np.inf
+    cur_w = w.copy()
 
     print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
-    for k in range(10000):
+    for k in range(max_iter):
 
         rnd_j = np.random.choice(n, 1+kappa, replace=False)
         i, others = rnd_j[0], rnd_j[1:]
@@ -153,23 +156,34 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
         # if cur_obj < obj:
         #     gamma = max(stop_thresh, gamma / 2)
 
-        if np.isinf(obj):
+        if not np.isfinite(obj):
             obj = cur_obj
-            break
-
-        if not monitor:
-
-            if abs(obj / cur_obj) > 1 - stop_thresh:
-                break
+            w = cur_w.copy()
+            gamma = max(min_gamma, gamma / 2)
 
         else:
+            if cur_obj > obj:
 
-            results.append(obj)
+                if cur_obj - obj < abs(stop_thresh * obj):
+            
+                    if monitor:
+                        results += [obj] * (max_iter - k)
+
+                    break
+
+                # gamma *= (1 + kappa / (2 * n)) 
+                gamma *= 1.05
+
+            else:
+                gamma = max(min_gamma, gamma / 1.3)
+            
+        results.append(obj)
 
         cur_obj = obj
+        cur_w = w.copy()
 
     # print(k, new_obj)
-    print("it=", k, "obj=", obj, "gamma=", gamma)
+    print("it=", k, "cur_obj=", cur_obj, "obj=", obj, "gamma=", gamma)
 
     # print("done in", k)
     similarities = np.zeros((n, n))

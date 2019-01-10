@@ -128,8 +128,7 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     else:
         w = 0.01 * (1 / np.maximum(z, 1))
 
-    # gamma = n / (kappa * (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2))))
-    gamma = 0.05
+    gamma = n / (kappa * (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2))))
 
     obj = obj_kalo(w, z, S, l, mu, la)
 
@@ -159,28 +158,28 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
             obj = obj_kalo(w, z, S, l, mu, la)
 
             # if cur_obj < obj:
-            #     gamma = max(stop_thresh, gamma / 2)
+            #     gamma = max(min_gamma, gamma / 2)
 
             if not np.isfinite(obj):
                 obj = cur_obj
                 w = cur_w.copy()
-                # gamma = max(min_gamma, gamma / 2)
+                gamma = max(min_gamma, gamma / 2)
 
             else:
                 if cur_obj > obj:
 
-                    if cur_obj - obj < abs(stop_thresh * obj):
+                    # if cur_obj - obj < abs(stop_thresh * obj):
                 
-                        if monitor:
-                            results += [obj] * (max_iter - k)
+                    #     if monitor:
+                    #         results += [obj] * (max_iter - k)
 
-                        break
+                    #     break
 
                 #     # gamma *= (1 + kappa / (2 * n)) 
-                #     gamma *= 1.05
+                    gamma *= 1.1
 
-                # else:
-                #     gamma = max(min_gamma, gamma / 1.3)
+                else:
+                    gamma = max(min_gamma, gamma / 2)
 
                 cur_obj = obj
                 cur_w = w.copy()

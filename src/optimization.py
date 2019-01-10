@@ -117,7 +117,7 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     n_pairs = n * (n - 1) // 2
     stop_thresh = 10e-30
     min_gamma = 10e-6
-    max_iter = 1000000
+    max_iter = 100000
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[triu_ix]
@@ -153,36 +153,39 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
 
         w[idx_block] = w[idx_block] - gamma * grad
         w[w < 0] = 0
-        obj = obj_kalo(w, z, S, l, mu, la)
 
-        # if cur_obj < obj:
-        #     gamma = max(stop_thresh, gamma / 2)
-
-        if not np.isfinite(obj):
-            obj = cur_obj
-            w = cur_w.copy()
-            # gamma = max(min_gamma, gamma / 2)
-
-        else:
-            if cur_obj > obj:
-
-                if cur_obj - obj < abs(stop_thresh * obj):
+        if k % 10000 == 0:
             
-                    if monitor:
-                        results += [obj] * (max_iter - k)
+            obj = obj_kalo(w, z, S, l, mu, la)
 
-                    break
+            # if cur_obj < obj:
+            #     gamma = max(stop_thresh, gamma / 2)
 
-            #     # gamma *= (1 + kappa / (2 * n)) 
-            #     gamma *= 1.05
+            if not np.isfinite(obj):
+                obj = cur_obj
+                w = cur_w.copy()
+                # gamma = max(min_gamma, gamma / 2)
 
-            # else:
-            #     gamma = max(min_gamma, gamma / 1.3)
+            else:
+                if cur_obj > obj:
 
-            cur_obj = obj
-            cur_w = w.copy()
-            
-        results.append(obj)
+                    if cur_obj - obj < abs(stop_thresh * obj):
+                
+                        if monitor:
+                            results += [obj] * (max_iter - k)
+
+                        break
+
+                #     # gamma *= (1 + kappa / (2 * n)) 
+                #     gamma *= 1.05
+
+                # else:
+                #     gamma = max(min_gamma, gamma / 1.3)
+
+                cur_obj = obj
+                cur_w = w.copy()
+                
+            results.append(obj)
 
     # print(k, new_obj)
     print("it=", k, "cur_obj=", cur_obj, "obj=", obj, "gamma=", gamma)

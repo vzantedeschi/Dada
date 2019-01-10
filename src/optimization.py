@@ -105,7 +105,7 @@ def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, *
 
     return similarities
 
-def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, **kwargs):
+def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, max_iter=10e6, **kwargs):
 
     monitor = False
     for key, value in kwargs.items():
@@ -117,7 +117,6 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     n_pairs = n * (n - 1) // 2
     stop_thresh = 10e-30
     min_gamma = 10e-6
-    max_iter = 100000
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[triu_ix]
@@ -129,7 +128,8 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     else:
         w = 0.01 * (1 / np.maximum(z, 1))
 
-    gamma = n / (kappa * (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2))))
+    # gamma = n / (kappa * (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2))))
+    gamma = 0.05
 
     obj = obj_kalo(w, z, S, l, mu, la)
 
@@ -140,7 +140,7 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     cur_w = w.copy()
 
     print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
-    for k in range(max_iter):
+    for k in range(int(max_iter)):
 
         rnd_j = np.random.choice(n, 1+kappa, replace=False)
         i, others = rnd_j[0], rnd_j[1:]
@@ -154,7 +154,7 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
         w[idx_block] = w[idx_block] - gamma * grad
         w[w < 0] = 0
 
-        if k % 10000 == 0:
+        if k % 10e4 == 0:
             
             obj = obj_kalo(w, z, S, l, mu, la)
 

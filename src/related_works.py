@@ -242,7 +242,7 @@ def alternating_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu=1, l
 
     results = []
 
-    S, triu_ix = kalo_utils(nb_nodes)
+    S, triu_ix, _ = kalo_utils(nb_nodes)
     
     # init with graph learned from local models
     _, theta = local_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu, max_samples_per_node, checkevery=nb_iter)

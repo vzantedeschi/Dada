@@ -105,7 +105,7 @@ def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, *
 
     return similarities
 
-def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, max_iter=10e6, **kwargs):
+def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, max_iter=1e3, **kwargs):
 
     monitor = False
     for key, value in kwargs.items():
@@ -115,8 +115,6 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
 
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
-    stop_thresh = 10e-30
-    min_gamma = 10e-6
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[triu_ix]
@@ -131,59 +129,43 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     gamma = n / (kappa * (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2))))
 
     obj = obj_kalo(w, z, S, l, mu, la)
+    cur_obj = np.inf
 
     if monitor:
         results.append(obj)
 
-    cur_obj = np.inf
-    cur_w = w.copy()
-
     print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
+
+    new_w = w.copy()
+
     for k in range(int(max_iter)):
 
         rnd_j = np.random.choice(n, 1+kappa, replace=False)
         i, others = rnd_j[0], rnd_j[1:]
 
         idx_block = map_idx[np.minimum(i, others), np.maximum(i, others)]
-        d_block = S[rnd_j, :].dot(w)
+        d_block = S[rnd_j, :].dot(new_w)
         S_block = S[rnd_j, :][:, idx_block]
 
         grad = l[rnd_j].dot(S_block) + (mu / 2) * (z[idx_block] - (1. / d_block).dot(S_block) + 2 * la * (mu / 2) * w[idx_block])
 
-        w[idx_block] = w[idx_block] - gamma * grad
-        w[w < 0] = 0
+        new_w[idx_block] = new_w[idx_block] - gamma * grad
+        new_w[new_w < 0] = 0
 
-        if k % 10e4 == 0:
-            
-            obj = obj_kalo(w, z, S, l, mu, la)
+        obj = obj_kalo(new_w, z, S, l, mu, la)
 
-            # if cur_obj < obj:
-            #     gamma = max(min_gamma, gamma / 2)
+        if k % n == 0:
 
-            if not np.isfinite(obj):
-                obj = cur_obj
-                w = cur_w.copy()
-                gamma = max(min_gamma, gamma / 2)
+            if obj > cur_obj:
+                gamma /= 2
+                new_w = w.copy()
 
             else:
-                if cur_obj > obj:
-
-                    # if cur_obj - obj < abs(stop_thresh * obj):
-                
-                    #     if monitor:
-                    #         results += [obj] * (max_iter - k)
-
-                    #     break
-
-                #     # gamma *= (1 + kappa / (2 * n)) 
-                    gamma *= 1.1
-
-                else:
-                    gamma = max(min_gamma, gamma / 2)
-
                 cur_obj = obj
-                cur_w = w.copy()
-                
+                gamma *= 1.05
+                w = new_w.copy()
+
+        if monitor:
             results.append(obj)
 
     # print(k, new_obj)

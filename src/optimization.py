@@ -40,14 +40,12 @@ def graph_discovery(nodes, similarities, k=1, *args):
 
     return res
 
-def obj_kalo(w, z, S, l, mu, la, eps=10e-6):
+def obj_kalo(w, z, S, l, mu, la):
 
     d = S.dot(w)
 
     if np.any(d < 0):
         return np.inf
-
-    d = d + eps
 
     return d.dot(l) + (mu / 2) * (w.dot(z) - np.log(d).sum() + la * (mu / 2) * w.dot(w))
 
@@ -126,18 +124,16 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     else:
         w = 0.01 * (1 / np.maximum(z, 1))
 
-    gamma = n / (kappa * (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2))))
+    gamma = 0.5
 
     obj = obj_kalo(w, z, S, l, mu, la)
-    cur_obj = np.inf
+
+    new_w = w.copy()
 
     if monitor:
         results.append(obj)
 
     print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
-
-    new_w = w.copy()
-
     for k in range(int(max_iter)):
 
         rnd_j = np.random.choice(n, 1+kappa, replace=False)
@@ -147,29 +143,30 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
         d_block = S[rnd_j, :].dot(new_w)
         S_block = S[rnd_j, :][:, idx_block]
 
-        grad = l[rnd_j].dot(S_block) + (mu / 2) * (z[idx_block] - (1. / d_block).dot(S_block) + 2 * la * (mu / 2) * w[idx_block])
+        grad = l[rnd_j].dot(S_block) + (mu / 2) * (z[idx_block] - (1. / d_block).dot(S_block) + 2 * la * (mu / 2) * new_w[idx_block])
 
         new_w[idx_block] = new_w[idx_block] - gamma * grad
         new_w[new_w < 0] = 0
 
-        obj = obj_kalo(new_w, z, S, l, mu, la)
+        new_obj = obj_kalo(new_w, z, S, l, mu, la)
 
         if k % n == 0:
 
-            if obj > cur_obj:
+            if new_obj > obj or not np.isfinite(new_obj):
                 gamma /= 2
                 new_w = w.copy()
+                new_obj = obj
 
             else:
-                cur_obj = obj
                 gamma *= 1.05
                 w = new_w.copy()
+                obj = new_obj
 
-        if monitor:
-            results.append(obj)
+            if monitor:
+                results.append(obj)
 
     # print(k, new_obj)
-    print("it=", k, "cur_obj=", cur_obj, "obj=", obj, "gamma=", gamma)
+    print("it=", k, "new_obj=", new_obj, "obj=", obj, "gamma=", gamma)
 
     # print("done in", k)
     similarities = np.zeros((n, n))

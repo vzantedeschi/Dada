@@ -44,13 +44,12 @@ def obj_kalo(w, z, S, l, mu, la):
 
     d = S.dot(w)
 
-    # print("kalo", d.dot(l), mu * w.dot(z) / 2, - np.log(d).sum(), b * w.dot(w))
-    if np.count_nonzero(d) < len(d):
+    if np.any(d < 0):
         return np.inf
 
     return d.dot(l) + (mu / 2) * (w.dot(z) - np.log(d).sum() + la * (mu / 2) * w.dot(w))
 
-def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, *args):
+def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, **kwargs):
 
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
@@ -86,12 +85,12 @@ def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, *
 
         elif abs(obj - new_obj) > abs(stop_thresh * obj):
             obj = new_obj
-            w = new_w
+            w = new_w.copy()
             gamma *= 1.05
             # print(k, obj)
 
         else:
-            w = new_w
+            w = new_w.copy()
             break
         
         d = S.dot(w)
@@ -104,11 +103,16 @@ def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, *
 
     return similarities
 
-def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, *args):
+def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, max_iter=1e3, **kwargs):
+
+    monitor = False
+    for key, value in kwargs.items():
+        if key == "monitor" and value == True:
+            monitor = True
+            results = []
 
     n = len(nodes)
     n_pairs = n * (n - 1) // 2
-    stop_thresh = 10e-6
 
     z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
     z = z[triu_ix]
@@ -118,55 +122,58 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     if similarities is not None:
         w = np.asarray(similarities[triu_ix])
     else:
-        w = np.ones(n_pairs)
-    d = S.dot(w)
+        w = 0.01 * (1 / np.maximum(z, 1))
 
-    gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2)))
+    gamma = 0.5
+
     obj = obj_kalo(w, z, S, l, mu, la)
 
-    w, new_w = np.ones(n_pairs), np.ones(n_pairs)
+    new_w = w.copy()
 
-    grad = np.zeros(kappa)
+    if monitor:
+        results.append(obj)
+
     print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
-    for k in range(2000):
+    for k in range(int(max_iter)):
 
-        rnd_j = np.random.choice(n, 1+kappa)
+        rnd_j = np.random.choice(n, 1+kappa, replace=False)
         i, others = rnd_j[0], rnd_j[1:]
-        ides = []
 
-        for e, j in enumerate(others):
+        idx_block = map_idx[np.minimum(i, others), np.maximum(i, others)]
+        d_block = S[rnd_j, :].dot(new_w)
+        S_block = S[rnd_j, :][:, idx_block]
 
-            idx = map_idx[min(i, j), max(i, j)]
-            grad[e] = l[i] + l[j] + (mu / 2) * (z[idx] - (1 / d[i] + 1 / d[j]) + 2 * la * (mu / 2) * w[idx])
-            ides.append(idx)
+        grad = l[rnd_j].dot(S_block) + (mu / 2) * (z[idx_block] - (1. / d_block).dot(S_block) + 2 * la * (mu / 2) * new_w[idx_block])
 
-        new_w[ides] = w[ides] - gamma * grad
+        new_w[idx_block] = new_w[idx_block] - gamma * grad
         new_w[new_w < 0] = 0
 
         new_obj = obj_kalo(new_w, z, S, l, mu, la)
 
-        # print("new obj=", new_obj)
+        if k % n == 0:
 
-        if new_obj > obj and (gamma / 2) > 0:
-            gamma /= 2
+            if new_obj > obj or not np.isfinite(new_obj):
+                gamma /= 2
+                new_w = w.copy()
+                new_obj = obj
 
-        elif abs(obj - new_obj) > abs(stop_thresh * obj):
-            obj = new_obj
-            w = new_w
-            gamma *= 1.05
-            # print(k, obj)
+            else:
+                gamma *= 1.05
+                w = new_w.copy()
+                obj = new_obj
 
-        else:
-            w = new_w
-            break
-        
-        d = S.dot(w)
+            if monitor:
+                results.append(obj)
 
-    print(k, new_obj)
+    # print(k, new_obj)
+    print("it=", k, "new_obj=", new_obj, "obj=", obj, "gamma=", gamma)
 
     # print("done in", k)
     similarities = np.zeros((n, n))
     similarities[triu_ix] = similarities.T[triu_ix] = w
+
+    if monitor:
+        return similarities, results
 
     return similarities
 

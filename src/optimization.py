@@ -133,7 +133,7 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
     if monitor:
         results.append(obj)
 
-    print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
+    # print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
     for k in range(int(max_iter)):
 
         rnd_j = np.random.choice(n, 1+kappa, replace=False)
@@ -166,7 +166,7 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
                 results.append(obj)
 
     # print(k, new_obj)
-    print("it=", k, "new_obj=", new_obj, "obj=", obj, "gamma=", gamma)
+    # print("it=", k, "new_obj=", new_obj, "obj=", obj, "gamma=", gamma)
 
     # print("done in", k)
     similarities = np.zeros((n, n))

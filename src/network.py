@@ -204,37 +204,11 @@ def random_graph(x, y, nb_nodes=3, prob_edge=1, cluster_data=False, rnd_state=No
 
     return nodes
 
-def synthetic_graph(x, y, x_test, y_test, nb_nodes, theta_true, max_nb_instances):
+def exponential_graph(x, y, x_test, y_test, nb_nodes, theta_true, max_nb_instances):
 
     adj_matrix, similarities = compute_adjacencies(theta_true, nb_nodes)
 
-    nodes = list()
-    nei_ids = list()
-    nei_sim = list()
-
-    for i in range(nb_nodes):
-
-        # add offset
-        M, _ = x[i].shape
-        x_copy = np.c_[x[i], np.ones(M)]
-        M, _ = x_test[i].shape
-        x_test_copy = np.c_[x_test[i], np.ones(M)]
-
-        n = Node(i, x_copy, y[i], x_test_copy, y_test[i])
-        nb_instances = len(x[i])
-        n.confidence = nb_instances / max_nb_instances
-
-        nei_ids.append([])
-        nei_sim.append([])
-        for j, a in enumerate(adj_matrix[i]):
-            if a != 0:
-                nei_ids[i].append(j)
-                nei_sim[i].append(similarities[i][j])
-        nodes.append(n)
-
-    for ids, sims, n in zip(nei_ids, nei_sim, nodes):
-        n.set_neighbors([nodes[i] for i in ids], sims)
-        n.sum_similarities = sum(sims)
+    nodes = graph(x, y, x_test, y_test, nb_nodes, adj_matrix, similarities, max_nb_instances)
 
     return nodes, adj_matrix, similarities
 

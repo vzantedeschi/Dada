@@ -202,6 +202,65 @@ def graph_discovery(nb_nodes, theta, similarities, S, triu_ix, l, mu=1, la=1, *a
 
     return similarities
 
+def block_graph_discovery(nb_nodes, theta, similarities, S, triu_ix, l, map_idx, mu=1, la=1, kappa=1, max_iter=1e6, *args):
+
+    n_pairs = nb_nodes * (nb_nodes - 1) // 2
+    stop_thresh = 10e-2 / n_pairs
+
+    z = pairwise_distances(theta)**2
+    z = z[triu_ix]
+
+    if similarities is not None:
+        w = np.asarray(similarities[triu_ix])
+    else:
+        w = 0.01 * (1 / np.maximum(z, 1))
+
+    gamma = 0.5
+
+    obj = obj_kalo(w, z, S, l, mu, la)
+
+    new_w = w.copy()
+
+    # print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
+    for k in range(int(max_iter)):
+
+        rnd_j = np.random.choice(nb_nodes, 1+kappa, replace=False)
+        i, others = rnd_j[0], rnd_j[1:]
+
+        idx_block = map_idx[np.minimum(i, others), np.maximum(i, others)]
+        d_block = S[rnd_j, :].dot(new_w)
+        S_block = S[rnd_j, :][:, idx_block]
+
+        grad = l[rnd_j].dot(S_block) + (mu / 2) * (z[idx_block] - (1. / d_block).dot(S_block) + 2 * la * (mu / 2) * new_w[idx_block])
+
+        new_w[idx_block] = new_w[idx_block] - gamma * grad
+        new_w[new_w < 0] = 0
+
+        new_obj = obj_kalo(new_w, z, S, l, mu, la)
+
+        if k % nb_nodes == 0:
+
+            if new_obj > obj or not np.isfinite(new_obj):
+                gamma /= 2
+                new_w = w.copy()
+                new_obj = obj
+
+            elif obj - new_obj < abs(obj) / stop_thresh:
+                break
+
+            else:
+                gamma *= 1.05
+                w = new_w.copy()
+                obj = new_obj
+
+    print(k)
+
+    # print("done in", k)
+    similarities = np.zeros((nb_nodes, nb_nodes))
+    similarities[triu_ix] = similarities.T[triu_ix] = w
+
+    return similarities
+
 def local_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu=1, max_samples_per_node=1, checkevery=1):
 
     results = []
@@ -232,6 +291,42 @@ def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similari
     # Collaborative learning
     for t in range(nb_iter):
         theta -= cost_function_gradient(L, d, theta, x, y, mu, max_samples_per_node)
+
+        if t % checkevery == 0:
+            results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
+
+    return results, theta
+
+def block_alternating_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu=1, la=1, kappa=1, max_samples_per_node=1, pace_gd=10, max_iter_gd=1e6, checkevery=1):
+
+    results = []
+
+    S, triu_ix, map_idx = kalo_utils(nb_nodes)
+    
+    # init with graph learned from local models
+    _, theta = local_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu, max_samples_per_node, checkevery=nb_iter)
+    l = np.asarray([F(s, x_i, y_i, max_samples_per_node) for s, x_i, y_i in zip(theta, x, y)])
+
+    similarities = block_graph_discovery(nb_nodes, theta, None, S, triu_ix, l, map_idx, mu=mu, la=la, kappa=kappa, max_iter=max_iter_gd)
+    adjacency = similarities > 0
+    L, d = compute_graph_matrices(nb_nodes, adjacency, similarities)
+
+    theta = np.zeros((nb_nodes, dim))
+    results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
+    
+    # Collaborative learning
+    for t in range(1, nb_iter+1):
+
+        # print(cost_function(L, d, theta, x, y, mu, max_samples_per_node))
+
+        theta -= cost_function_gradient(L, d, theta, x, y, mu, max_samples_per_node)
+
+        if t % pace_gd == 0:
+
+            l = np.asarray([F(s, x_i, y_i, max_samples_per_node) for s, x_i, y_i in zip(theta, x, y)])
+            similarities = block_graph_discovery(nb_nodes, theta, similarities, S, triu_ix, l, map_idx, mu=mu, la=la, kappa=kappa, max_iter=max_iter_gd)
+            adjacency = similarities > 0
+            L, d = compute_graph_matrices(nb_nodes, adjacency, similarities)
 
         if t % checkevery == 0:
             results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})

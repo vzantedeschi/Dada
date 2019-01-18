@@ -103,7 +103,7 @@ def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, *
 
     return similarities
 
-def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, max_iter=1e3, **kwargs):
+def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, max_iter=1e6, **kwargs):
 
     monitor = False
     for key, value in kwargs.items():
@@ -157,6 +157,9 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
                 new_w = w.copy()
                 new_obj = obj
 
+            elif not monitor and obj - new_obj < abs(obj) / 1e6:
+                break
+
             else:
                 gamma *= 1.05
                 w = new_w.copy()
@@ -167,6 +170,7 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
 
     # print(k, new_obj)
     # print("it=", k, "new_obj=", new_obj, "obj=", obj, "gamma=", gamma)
+    print(k)
 
     # print("done in", k)
     similarities = np.zeros((n, n))

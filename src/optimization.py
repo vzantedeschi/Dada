@@ -360,6 +360,67 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
 
     return results
 
+def gd_reg_local_FW_obj_kalo(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, monitors=None):
+
+    results = []
+    N = len(nodes)
+
+    if gd_method["name"] in ["kalo", "block_kalo"]:
+
+        S, triu_ix, map_idx = kalo_utils(N)
+        gd_method["args"] = (S, triu_ix, map_idx,) + gd_method["args"]
+
+    gd_function = gd_func_dict[gd_method["name"]]
+    gd_args = gd_method["args"]
+    gd_pace = gd_method["pace_gd"]
+
+    # iterations = [0] * N
+
+    # start from local models
+    local_FW(nodes, base_clfs, beta=beta, nb_iter=nb_iter, monitors={})
+
+    # init graph
+    similarities = gd_function(nodes, None, *gd_args)
+    adj_matrix = get_adj_matrix(similarities, 1e-3)
+
+    # get margin matrices A and reinit local models and graph
+    for n in nodes:
+        n.init_matrices(base_clfs)
+    set_edges(nodes, similarities, adj_matrix)
+
+    stack_results(nodes, results, 0, monitors)
+
+    duals = [0] * N
+
+    for t in range(1, nb_iter+1):
+
+        if t % gd_pace == 0:
+
+            # save results before graph optimization
+            stack_results(nodes, results, dual_gap, monitors, similarities)
+
+            # graph discovery
+            similarities = gd_function(nodes, similarities, *gd_args)
+            adj_matrix = get_adj_matrix(similarities, 1e-3)
+            set_edges(nodes, similarities, adj_matrix)
+
+            stack_results(nodes, results, dual_gap, monitors, similarities)
+
+        # pick one node at random uniformly
+        i = randint(0, len(nodes)-1)
+        n = nodes[i]
+
+        gamma = 2*N / (2*N + t)
+        # iterations[i] += 1
+
+        reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
+
+        frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
+
+        dual_gap = sum(duals)
+
+    return results
+
 def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, monitors=None, checkevery=1):
 
     results = []

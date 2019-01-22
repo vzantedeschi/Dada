@@ -8,7 +8,7 @@ from optimization import block_kalo_graph_discovery, local_FW
 from utils import generate_fixed_moons, get_min_max
 
 def expected_new_nodes(nb_nodes, kappa, nb_iter):
-    return kappa * ((nb_nodes**2 - nb_nodes - kappa) / nb_nodes * (nb_nodes))**nb_iter
+    return round(kappa * ((nb_nodes**2 - nb_nodes - kappa) / nb_nodes * (nb_nodes))**nb_iter, 2)
 
 # set graph of nodes with local personalized data
 D = 20
@@ -75,10 +75,15 @@ for kappa in [30, 50, 99]:
 cost = min(2000 / K, n)
 Z = 32
 
+comm_iter = {}
 comm = {}
 
 for kappa in kappas:
-    comm[kappa] = [(2 * Z * kappa + (cost * (Z + log(n)) + Z) * expected_new_nodes(K, kappa, i)) * (i+1) for i in range(len(objectives[kappa]))]
+    comm_iter[kappa] = [2 * Z * kappa + (cost * (Z + log(n)) + Z) * expected_new_nodes(K, kappa, i) for i in range(len(objectives[kappa]))]
+
+for kappa in kappas:
+    for i, _ in enumerate(comm_iter[kappa]):
+        comm[kappa][i] = sum(comm_iter[kappa][:i])
 
 max_comm = max([comm[kappa][-1] for kappa in kappas])
 

@@ -170,7 +170,6 @@ def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, l
 
     # print(k, new_obj)
     # print("it=", k, "new_obj=", new_obj, "obj=", obj, "gamma=", gamma)
-    print(k)
 
     # print("done in", k)
     similarities = np.zeros((n, n))

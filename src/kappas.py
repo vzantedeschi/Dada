@@ -7,8 +7,13 @@ from network import exponential_graph
 from optimization import block_kalo_graph_discovery, local_FW
 from utils import generate_fixed_moons, get_min_max
 
+import matplotlib.pyplot as plt
+
 def expected_new_nodes(nb_nodes, kappa, nb_iter):
-    return round(kappa * ((nb_nodes**2 - nb_nodes - kappa) / nb_nodes * (nb_nodes))**nb_iter, 2)
+    try:
+        return round(kappa * ((nb_nodes**2 - nb_nodes - kappa) / (nb_nodes * (nb_nodes - 1)))**nb_iter, 6)
+    except:
+        return 0
 
 # set graph of nodes with local personalized data
 D = 20
@@ -82,8 +87,9 @@ for kappa in kappas:
     comm_iter[kappa] = [2 * Z * kappa + (cost * (Z + log(n)) + Z) * expected_new_nodes(K, kappa, i) for i in range(len(objectives[kappa]))]
 
 for kappa in kappas:
+    comm[kappa] = []
     for i, _ in enumerate(comm_iter[kappa]):
-        comm[kappa][i] = sum(comm_iter[kappa][:i])
+        comm[kappa].append(sum(comm_iter[kappa][:i+1]))
 
 max_comm = max([comm[kappa][-1] for kappa in kappas])
 
@@ -119,8 +125,6 @@ plt.ylabel('obj function', fontsize=15)
 
 for kappa in kappas:
     plt.plot(comm[kappa], objectives[kappa], color=cmap(log(kappa) / log(99)), label="kappa = {}".format(kappa), linewidth=2)
-
-plt.plot([full_gd_comm], [min_obj], color="o", label="centralized", linewidth=2)
     
 plt.legend(loc='upper right', fontsize=12)
 
@@ -130,4 +134,5 @@ plt.xticks(fontsize = 12)
 plt.yticks(fontsize = 12)
 
 plt.xlim(0, max_comm)
+
 plt.savefig("kappas.pdf",  bbox_inches="tight")

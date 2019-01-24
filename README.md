@@ -1,4 +1,4 @@
-# Decentralized Frank-Wolfe Boosting for Collaborative Learning of Personalized Models
+# Decentralized Frank-Wolfe Boosting for Collaborative Learning of Personalized Models with Graph Optimization
 
 **python3 project**
 

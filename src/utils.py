@@ -16,7 +16,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import normalize, scale, MinMaxScaler
 
-# ----------------------------------------------------------------------------- IO FUNCTIONS
+# -------------------------------------------------------------------------- IO FUNCTIONS
 
 def make_directory(dir_path):
     if not os.path.exists(dir_path):
@@ -603,3 +603,5 @@ def compute_adjacencies(clfs, n, sigma=0.1):
     adjacency = get_adj_matrix(similarities)
 
     return adjacency, similarities
+
+# ----------------------------------------------------------------------------- ARG PARSER

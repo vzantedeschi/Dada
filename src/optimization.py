@@ -331,8 +331,6 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
     results = []
     N = len(nodes)
 
-    iterations = [0] * N
-
     # get margin matrices A
     for n in nodes:
         n.init_matrices(base_clfs)

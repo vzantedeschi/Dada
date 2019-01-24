@@ -133,6 +133,6 @@ plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
 plt.xticks(fontsize = 12)
 plt.yticks(fontsize = 12)
 
-plt.xlim(0, max_comm)
+plt.xlim(0, 6e6)
 
 plt.savefig("kappas.pdf",  bbox_inches="tight")

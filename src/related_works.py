@@ -2,6 +2,10 @@ from math import log
 
 import numpy as np
 
+from sklearn.metrics.pairwise import pairwise_distances
+
+from utils import kalo_utils
+
 # ----------------------------------------------------------------------- LAFOND
 
 def minimize_gradients(gradients, nodes, gamma, beta=None):
@@ -99,14 +103,14 @@ def dF(s, x_i, y_i, max_samples_per_node):
     """Local loss function gradient"""
     return - x_i.T.dot(y_i * ((1 - x_i.dot(s) * y_i) > 0)) / max_samples_per_node
 
-def cost_function(theta, x, y, alpha, max_samples_per_node):
+def cost_function(L, d, theta, x, y, mu, max_samples_per_node):
     """Global cost function"""
-    return (alpha * np.sum(theta * L.dot(theta))/2
-            + (1-alpha)*np.sum([d_i*F(s, x_i, y_i, max_samples_per_node) for d_i, s, x_i, y_i in zip(d, theta, x, y)]))
+    return (mu * np.sum(theta * L.dot(theta))/2
+            + np.sum([d_i*F(s, x_i, y_i, max_samples_per_node) for d_i, s, x_i, y_i in zip(d, theta, x, y)]))
 
-def cost_function_gradient(L, d, theta, x, y, alpha, max_samples_per_node):
+def cost_function_gradient(L, d, theta, x, y, mu, max_samples_per_node):
     """Global cost function gradient"""
-    return (alpha * L.dot(theta) + (1 - alpha) * np.array([d_i * dF(s, x_i, y_i, max_samples_per_node) for d_i, s, x_i, y_i in zip(d, theta, x, y)]))
+    return (mu * L.dot(theta) + np.array([d_i * dF(s, x_i, y_i, max_samples_per_node) for d_i, s, x_i, y_i in zip(d, theta, x, y)]))
 
 # Local initial models
 def compute_theta_loc(n, x, y, dim, max_samples_per_node):
@@ -139,10 +143,147 @@ def compute_graph_matrices(n, adjacency, similarities):
 
     return L, d
 
-def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similarities, mu=1, max_samples_per_node=20, checkevery=1):
+def obj_kalo(w, z, S, l, mu, la):
+
+    d = S.dot(w)
+
+    if np.count_nonzero(d) < len(d):
+        return np.inf
+
+    return d.dot(l) + (mu/2) * (w.dot(z) - np.log(d).sum() + la * (mu/2) * w.dot(w))
+
+def graph_discovery(nb_nodes, theta, similarities, S, triu_ix, l, mu=1, la=1, *args):
+
+    n_pairs = nb_nodes * (nb_nodes - 1) // 2
+    stop_thresh = 10e-2 / n_pairs
+
+    z = pairwise_distances(theta)**2
+    z = z[triu_ix]
+
+    if similarities is not None:
+        w = np.asarray(similarities[triu_ix])
+    else:
+        w = np.ones(n_pairs)
+    d = S.dot(w)
+
+    gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu/2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * mu / 2))
+    obj = obj_kalo(w, z, S, l, mu, la)
+# 
+    # print('\n', 0, obj)
+    for k in range(2000):
+
+        grad = l.dot(S) + (mu / 2) * (z - (1. / d).dot(S) + 2 * la * (mu / 2) * w)
+
+        new_w = w - gamma * grad
+        new_w[new_w < 0] = 0
+
+        new_obj = obj_kalo(new_w, z, S, l, mu, la)
+        # print(gamma, new_obj)
+        if new_obj > obj:
+            gamma /= 2
+            # print("inf")
+
+        elif abs(obj - new_obj) > abs(stop_thresh * obj):
+            obj = new_obj
+            w = new_w
+            gamma *= 1.05
+            # print(k, obj)
+
+        else:
+            w = new_w
+            break
+        
+        d = S.dot(w)
+
+    # print(k, new_obj)
+
+    # print("done in", k)
+    similarities = np.zeros((nb_nodes, nb_nodes))
+    similarities[triu_ix] = similarities.T[triu_ix] = w
+
+    return similarities
+
+def block_graph_discovery(nb_nodes, theta, similarities, S, triu_ix, l, map_idx, mu=1, la=1, kappa=1, max_iter=1e6, *args):
+
+    n_pairs = nb_nodes * (nb_nodes - 1) // 2
+    stop_thresh = 10e-2 / n_pairs
+
+    z = pairwise_distances(theta)**2
+    z = z[triu_ix]
+
+    if similarities is not None:
+        w = np.asarray(similarities[triu_ix])
+    else:
+        w = 0.01 * (1 / np.maximum(z, 1))
+
+    gamma = 0.5
+
+    obj = obj_kalo(w, z, S, l, mu, la)
+
+    new_w = w.copy()
+
+    # print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
+    for k in range(int(max_iter)):
+
+        rnd_j = np.random.choice(nb_nodes, 1+kappa, replace=False)
+        i, others = rnd_j[0], rnd_j[1:]
+
+        idx_block = map_idx[np.minimum(i, others), np.maximum(i, others)]
+        d_block = S[rnd_j, :].dot(new_w)
+        S_block = S[rnd_j, :][:, idx_block]
+
+        grad = l[rnd_j].dot(S_block) + (mu / 2) * (z[idx_block] - (1. / d_block).dot(S_block) + 2 * la * (mu / 2) * new_w[idx_block])
+
+        new_w[idx_block] = new_w[idx_block] - gamma * grad
+        new_w[new_w < 0] = 0
+
+        new_obj = obj_kalo(new_w, z, S, l, mu, la)
+
+        if k % nb_nodes == 0:
+
+            if new_obj > obj or not np.isfinite(new_obj):
+                gamma /= 2
+                new_w = w.copy()
+                new_obj = obj
+
+            elif obj - new_obj < abs(obj) / stop_thresh:
+                break
+
+            else:
+                gamma *= 1.05
+                w = new_w.copy()
+                obj = new_obj
+
+    print(k)
+
+    # print("done in", k)
+    similarities = np.zeros((nb_nodes, nb_nodes))
+    similarities[triu_ix] = similarities.T[triu_ix] = w
+
+    return similarities
+
+def local_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu=1, max_samples_per_node=1, checkevery=1):
 
     results = []
-    alpha = 1 / (1 + mu)
+
+    L, d = compute_graph_matrices(nb_nodes, np.eye(nb_nodes), np.eye(nb_nodes))
+
+    theta = np.zeros((nb_nodes, dim))
+    results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
+    
+    # Collaborative learning
+    for t in range(nb_iter):
+        theta -= cost_function_gradient(L, d, theta, x, y, mu, max_samples_per_node)
+
+        if t % checkevery == 0:
+            results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
+
+    return results, theta
+
+def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similarities, mu=1, max_samples_per_node=1, checkevery=1):
+
+    results = []
+
     L, d = compute_graph_matrices(nb_nodes, adjacency, similarities)
 
     theta = np.zeros((nb_nodes, dim))
@@ -150,7 +291,80 @@ def colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, adjacency, similari
     
     # Collaborative learning
     for t in range(nb_iter):
-        theta -= cost_function_gradient(L, d, theta, x, y, alpha, max_samples_per_node)
+
+        theta -= cost_function_gradient(L, d, theta, x, y, mu, max_samples_per_node)
+
+        if t % checkevery == 0:
+            results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
+
+    return results, theta
+
+def block_alternating_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu=1, la=1, kappa=1, max_samples_per_node=1, pace_gd=10, max_iter_gd=1e6, checkevery=1):
+
+    results = []
+
+    S, triu_ix, map_idx = kalo_utils(nb_nodes)
+    
+    # init with graph learned from local models
+    _, theta = local_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu, max_samples_per_node, checkevery=nb_iter)
+    l = np.asarray([F(s, x_i, y_i, max_samples_per_node) for s, x_i, y_i in zip(theta, x, y)])
+
+    similarities = block_graph_discovery(nb_nodes, theta, None, S, triu_ix, l, map_idx, mu=mu, la=la, kappa=kappa, max_iter=max_iter_gd)
+    adjacency = similarities > 0
+    L, d = compute_graph_matrices(nb_nodes, adjacency, similarities)
+
+    theta = np.zeros((nb_nodes, dim))
+    results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
+    
+    # Collaborative learning
+    for t in range(1, nb_iter+1):
+
+        # print(cost_function(L, d, theta, x, y, mu, max_samples_per_node))
+
+        theta -= cost_function_gradient(L, d, theta, x, y, mu, max_samples_per_node)
+
+        if t % pace_gd == 0:
+
+            l = np.asarray([F(s, x_i, y_i, max_samples_per_node) for s, x_i, y_i in zip(theta, x, y)])
+            similarities = block_graph_discovery(nb_nodes, theta, similarities, S, triu_ix, l, map_idx, mu=mu, la=la, kappa=kappa, max_iter=max_iter_gd)
+            adjacency = similarities > 0
+            L, d = compute_graph_matrices(nb_nodes, adjacency, similarities)
+
+        if t % checkevery == 0:
+            results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
+
+    return results, theta
+
+def alternating_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu=1, la=1, max_samples_per_node=1, pace_gd=10, checkevery=1):
+
+    results = []
+
+    S, triu_ix, _ = kalo_utils(nb_nodes)
+    
+    # init with graph learned from local models
+    _, theta = local_colearning(nb_nodes, x, y, x_test, y_test, dim, nb_iter, mu, max_samples_per_node, checkevery=nb_iter)
+    l = np.asarray([F(s, x_i, y_i, max_samples_per_node) for s, x_i, y_i in zip(theta, x, y)])
+
+    similarities = graph_discovery(nb_nodes, theta, None, S, triu_ix, l, mu=mu, la=la)
+    adjacency = similarities > 0
+    L, d = compute_graph_matrices(nb_nodes, adjacency, similarities)
+
+    theta = np.zeros((nb_nodes, dim))
+    results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})
+    
+    # Collaborative learning
+    for t in range(1, nb_iter+1):
+
+        # print(cost_function(L, d, theta, x, y, mu, max_samples_per_node))
+
+        theta -= cost_function_gradient(L, d, theta, x, y, mu, max_samples_per_node)
+
+        if t % pace_gd == 0:
+
+            l = np.asarray([F(s, x_i, y_i, max_samples_per_node) for s, x_i, y_i in zip(theta, x, y)])
+            similarities = graph_discovery(nb_nodes, theta, similarities, S, triu_ix, l, mu=mu, la=la)
+            adjacency = similarities > 0
+            L, d = compute_graph_matrices(nb_nodes, adjacency, similarities)
 
         if t % checkevery == 0:
             results.append({"train-accuracy": class_ratio(theta, x, y), "test-accuracy": class_ratio(theta, x_test, y_test)})

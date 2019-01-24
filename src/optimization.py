@@ -1,12 +1,13 @@
-import cvxpy as cvx
 import numpy as np
 from random import randint
 
+from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.neighbors import NearestNeighbors
 
 from classification import get_double_basis
-from network import centralize_data, set_edges
-from utils import square_root_matrix, get_adj_matrix
+from evaluation import losses
+from network import centralize_data, set_edges, get_alphas
+from utils import square_root_matrix, get_adj_matrix, stack_results, kalo_utils
 
 """
 Boosting algorithms using Frank Wolfe optimization
@@ -14,7 +15,7 @@ Boosting algorithms using Frank Wolfe optimization
 
 # ----------------------------------------------------------- specific utils
 
-def graph_discovery_sparse(nodes, k=1, *args):
+def graph_discovery(nodes, similarities, k=1, *args):
     
     N = len(nodes)
 
@@ -31,59 +32,158 @@ def graph_discovery_sparse(nodes, k=1, *args):
     result = prob.solve()
 
     res = np.asarray(x.value)
-    assert np.allclose(res, res.T)
+    # assert np.allclose(res, res.T)
 
     # drop insignificant edges
     res[res < 1/N] = 0.
+    np.fill_diagonal(res, 0.)
 
     return res
 
-def graph_discovery_knn(nodes, k=10, *args):
+def obj_kalo(w, z, S, l, mu, la):
 
-    N = len(nodes)
+    d = S.dot(w)
 
-    alpha = np.hstack([n.alpha for n in nodes])
+    if np.any(d < 0):
+        return np.inf
 
-    x = cvx.Variable(N, N)
+    return d.dot(l) + (mu / 2) * (w.dot(z) - np.log(d).sum() + la * (mu / 2) * w.dot(w))
 
-    # set node degrees to 1
-    objective = cvx.Minimize(cvx.trace(alpha * (np.eye(N) - x) * alpha.T))
-    constraints = [x > np.zeros((N,N)), cvx.trace(x) == 0, cvx.sum_entries(x, axis=1) == np.ones(N), cvx.sum_entries(x, axis=0) == np.ones((1,N))]
+def kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, **kwargs):
 
-    prob = cvx.Problem(objective, constraints)
-    result = prob.solve()   
+    n = len(nodes)
+    n_pairs = n * (n - 1) // 2
+    stop_thresh = 10e-2 / n_pairs
 
-    graph_sim = np.asarray(x.value).clip(min=0)
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(1 - graph_sim)
+    z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
+    z = z[triu_ix]
 
-    sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
+    l = np.asarray(losses(nodes))
 
-    # make it symmetric
-    sparsity_mask = np.logical_or(sparsity_mask, sparsity_mask.T)
+    if similarities is not None:
+        w = np.asarray(similarities[triu_ix])
+    else:
+        w = np.ones(n_pairs)
+    d = S.dot(w)
 
-    return np.multiply(graph_sim, sparsity_mask)
+    gamma = 1 / (np.linalg.norm(l.dot(S)) + (mu / 2) * (np.linalg.norm(z) + np.linalg.norm(S.T.dot(S)) + 2 * la * (mu / 2)))
+    obj = obj_kalo(w, z, S, l, mu, la)
+# 
+    # print('\n', 0, obj)
+    for k in range(2000):
 
-def graph_discovery_full_knn(nodes, k=10, *args):
+        grad = l.dot(S) + (mu / 2) * (z - (1. / d).dot(S) + 2 * la * (mu / 2) * w)
 
-    N = len(nodes)
+        new_w = w - gamma * grad
+        new_w[new_w < 0] = 0
 
-    alpha = np.hstack([n.alpha for n in nodes])
+        new_obj = obj_kalo(new_w, z, S, l, mu, la)
+        # print(gamma, new_obj)
+        if new_obj > obj:
+            gamma /= 2
+            # print("inf")
 
-    graph_sim = np.dot(alpha.T, alpha)
+        elif abs(obj - new_obj) > abs(stop_thresh * obj):
+            obj = new_obj
+            w = new_w.copy()
+            gamma *= 1.05
+            # print(k, obj)
 
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(1 - graph_sim)
+        else:
+            w = new_w.copy()
+            break
+        
+        d = S.dot(w)
 
-    sparsity_mask = nbrs.kneighbors_graph(1 - graph_sim).toarray()
+    # print(k, new_obj)
 
-    # make it symmetric
-    sparsity_mask = np.logical_or(sparsity_mask, sparsity_mask.T)
+    # print("done in", k)
+    similarities = np.zeros((n, n))
+    similarities[triu_ix] = similarities.T[triu_ix] = w
 
-    return np.multiply(graph_sim, sparsity_mask)
+    return similarities
+
+def block_kalo_graph_discovery(nodes, similarities, S, triu_ix, map_idx, mu=1, la=1, kappa=1, max_iter=1e6, **kwargs):
+
+    monitor = False
+    for key, value in kwargs.items():
+        if key == "monitor" and value == True:
+            monitor = True
+            results = []
+
+    n = len(nodes)
+    n_pairs = n * (n - 1) // 2
+
+    z = pairwise_distances(np.hstack(get_alphas(nodes)).T)**2
+    z = z[triu_ix]
+
+    l = np.asarray(losses(nodes))
+
+    if similarities is not None:
+        w = np.asarray(similarities[triu_ix])
+    else:
+        w = 0.01 * (1 / np.maximum(z, 1))
+
+    gamma = 0.5
+
+    obj = obj_kalo(w, z, S, l, mu, la)
+
+    new_w = w.copy()
+
+    if monitor:
+        results.append(obj)
+
+    # print('\n', "it=", 0, "obj=", obj, "gamma=", gamma)
+    for k in range(int(max_iter)):
+
+        rnd_j = np.random.choice(n, 1+kappa, replace=False)
+        i, others = rnd_j[0], rnd_j[1:]
+
+        idx_block = map_idx[np.minimum(i, others), np.maximum(i, others)]
+        d_block = S[rnd_j, :].dot(new_w)
+        S_block = S[rnd_j, :][:, idx_block]
+
+        grad = l[rnd_j].dot(S_block) + (mu / 2) * (z[idx_block] - (1. / d_block).dot(S_block) + 2 * la * (mu / 2) * new_w[idx_block])
+
+        new_w[idx_block] = new_w[idx_block] - gamma * grad
+        new_w[new_w < 0] = 0
+
+        new_obj = obj_kalo(new_w, z, S, l, mu, la)
+
+        if k % n == 0:
+
+            if new_obj > obj or not np.isfinite(new_obj):
+                gamma /= 2
+                new_w = w.copy()
+                new_obj = obj
+
+            elif not monitor and obj - new_obj < abs(obj) / 1e6:
+                break
+
+            else:
+                gamma *= 1.05
+                w = new_w.copy()
+                obj = new_obj
+
+            if monitor:
+                results.append(obj)
+
+    # print(k, new_obj)
+    # print("it=", k, "new_obj=", new_obj, "obj=", obj, "gamma=", gamma)
+
+    # print("done in", k)
+    similarities = np.zeros((n, n))
+    similarities[triu_ix] = similarities.T[triu_ix] = w
+
+    if monitor:
+        return similarities, results
+
+    return similarities
 
 gd_func_dict = {
-    "laplacian": graph_discovery_sparse,
-    "knn": graph_discovery_knn,
-    "full-knn": graph_discovery_full_knn,
+    "block_kalo": block_kalo_graph_discovery,
+    "kalo": kalo_graph_discovery,
+    "uniform": graph_discovery
 }
 
 def one_frank_wolfe_round(nodes, gamma, beta=None, t=1, mu=0, reg_sum=None):
@@ -182,7 +282,7 @@ def global_reg_frank_wolfe(nodes, gamma, alpha0, beta=None, t=1):
 
 # --------------------------------------------------------------------- local learning
 
-def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
+def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None, checkevery=1):
 
     results = []
     
@@ -190,12 +290,8 @@ def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
     for n in nodes:
         n.init_matrices(base_clfs)
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
 
-    
     # frank-wolfe
     for t in range(nb_iter):
 
@@ -203,10 +299,8 @@ def local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
         dual_gap = sum(one_frank_wolfe_round(nodes, gamma, beta))
 
-        results.append({})  
-        for k, call in monitors.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        if t % checkevery == 0:
+            stack_results(nodes, results, dual_gap, monitors)
 
     return results
 
@@ -219,10 +313,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors
         n.init_matrices(base_clfs)
     alpha0 = np.zeros((len(base_clfs), 1))
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
     
     # frank-wolfe
     for t in range(nb_iter):
@@ -231,10 +322,7 @@ def global_regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors
 
         dual_gap, alpha0 = global_reg_frank_wolfe(nodes, gamma, alpha0, beta=beta, t=1)
 
-        results.append({})  
-        for k, call in monitors.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        stack_results(nodes, results, dual_gap, monitors)
 
     return results
 
@@ -243,14 +331,13 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
     results = []
     N = len(nodes)
 
+    iterations = [0] * N
+
     # get margin matrices A
     for n in nodes:
         n.init_matrices(base_clfs)
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
 
     duals = [0] * N
 
@@ -262,45 +349,67 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
 
         gamma = 2 * N / (2 * N + t)
 
+        iterations[i] += 1
+
         reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
 
         frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
 
         if t % checkevery == 0:
-            results.append({})  
-            for k, call in monitors.items():
-                results[len(results)-1][k] = call[0](nodes, *call[1])
-            results[len(results)-1]["duality-gap"] = sum(duals)
+
+            stack_results(nodes, results, sum(duals), monitors)
 
     return results
 
-def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, reset_step=False, monitors=None, checkevery=1):
+def gd_reg_local_FW_obj_kalo(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, monitors=None):
+>>>>>>> c9312c62668e570044ab2cda6d6ce5bd2b19c41b
 
     results = []
     N = len(nodes)
+
+    if gd_method["name"] in ["kalo", "block_kalo"]:
+
+        S, triu_ix, map_idx = kalo_utils(N)
+        gd_method["args"] = (S, triu_ix, map_idx,) + gd_method["args"]
 
     gd_function = gd_func_dict[gd_method["name"]]
     gd_args = gd_method["args"]
     gd_pace = gd_method["pace_gd"]
 
-    # get margin matrices A
+    # iterations = [0] * N
+
+    # start from local models
+    local_FW(nodes, base_clfs, beta=beta, nb_iter=nb_iter, monitors={})
+
+    # init graph
+    similarities = gd_function(nodes, None, *gd_args)
+    adj_matrix = get_adj_matrix(similarities, 1e-3)
+
+    # get margin matrices A and reinit local models and graph
     for n in nodes:
         n.init_matrices(base_clfs)
-        
-    adj_matrix = get_adj_matrix(init_w, 1e-3)
-    set_edges(nodes, init_w, adj_matrix)
+    set_edges(nodes, similarities, adj_matrix)
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
 
     duals = [0] * N
 
-    resettable_t = 0
-    for t in range(nb_iter):
+    for t in range(1, nb_iter+1):
 
-        # pick one node at random uniformally
+        if t % gd_pace == 0:
+
+            # save results before graph optimization
+            stack_results(nodes, results, dual_gap, monitors, similarities)
+
+            # graph discovery
+            similarities = gd_function(nodes, similarities, *gd_args)
+            adj_matrix = get_adj_matrix(similarities, 1e-3)
+            set_edges(nodes, similarities, adj_matrix)
+
+            stack_results(nodes, results, dual_gap, monitors, similarities)
+
+        # pick one node at random uniformly
+
         i = randint(0, len(nodes)-1)
         n = nodes[i]
 
@@ -312,29 +421,69 @@ def gd_reg_local_FW(nodes, base_clfs, init_w, gd_method={"name":"laplacian", "pa
 
         dual_gap = sum(duals)
 
-        if t % checkevery == 0:
-            results.append({})  
-            for k, call in monitors.items():
-                results[len(results)-1][k] = call[0](nodes, *call[1])
-            results[len(results)-1]["duality-gap"] = dual_gap
+    return results
 
-        resettable_t += 1
+def gd_reg_local_FW(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, monitors=None, checkevery=1):
 
-        if resettable_t % gd_pace == 0:
+    results = []
+    N = len(nodes)
+
+    if gd_method["name"] in ["kalo", "block_kalo"]:
+
+        S, triu_ix, map_idx = kalo_utils(N)
+        gd_method["args"] = (S, triu_ix, map_idx,) + gd_method["args"]
+
+    gd_function = gd_func_dict[gd_method["name"]]
+    gd_args = gd_method["args"]
+    gd_pace = gd_method["pace_gd"]
+
+    # iterations = [0] * N
+
+    # start from local models
+    local_FW(nodes, base_clfs, beta=beta, nb_iter=nb_iter, monitors={})
+
+    # init graph
+    similarities = gd_function(nodes, None, *gd_args)
+    adj_matrix = get_adj_matrix(similarities, 1e-3)
+
+    # get margin matrices A and reinit local models and graph
+    for n in nodes:
+        n.init_matrices(base_clfs)
+    set_edges(nodes, similarities, adj_matrix)
+
+    stack_results(nodes, results, 0, monitors)
+
+    duals = [0] * N
+
+    for t in range(1, nb_iter+1):
+
+        if t % gd_pace == 0:
 
             # graph discovery
-            similarities = gd_function(nodes, gd_args)
+            similarities = gd_function(nodes, similarities, *gd_args)
             adj_matrix = get_adj_matrix(similarities, 1e-3)
             set_edges(nodes, similarities, adj_matrix)
 
-            if reset_step:
-                resettable_t = 0
+        # pick one node at random uniformly
+        i = randint(0, len(nodes)-1)
+        n = nodes[i]
 
-            # results[t+1]["adj-matrix"] = similarities
+        gamma = 2*N / (2*N + t)
+        # iterations[i] += 1
+
+        reg_sum = sum([s*m.alpha for m, s in zip(n.neighbors, n.sim)])
+
+        frank_wolfe_on_one_node(n, i, gamma, duals, beta, 1, mu, reg_sum)
+
+        dual_gap = sum(duals)
+
+        if t % checkevery == 0:
+            stack_results(nodes, results, dual_gap, monitors, similarities)
+
+    results[-1]["adj-matrix"] = adj_matrix
+    results[-1]["similarities"] = similarities
 
     return results
-
-# ---------------------------------------------------------------- global consensus FW
 
 def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, monitors=None):
 
@@ -344,10 +493,7 @@ def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, monitors=
     for n in nodes:
         n.init_matrices(base_clfs)
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](nodes, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(nodes, results, 0, monitors)
 
     # frank-wolfe
     for t in range(nb_iter):
@@ -369,14 +515,11 @@ def average_FW(nodes, base_clfs, nb_iter=1, beta=None, weighted=False, monitors=
         for n, a in zip(nodes, new_alphas):
             n.set_alpha(a)
 
-        results.append({})  
-        for k, call in monitors.items():
-            results[t+1][k] = call[0](nodes, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        stack_results(nodes, results, dual_gap, monitors)
 
     return results
 
-def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
+def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None, checkevery=1):
 
     results = []
 
@@ -385,10 +528,7 @@ def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
     list_node = [node]
 
-    results.append({})  
-    for k, call in monitors.items():
-        results[0][k] = call[0](list_node, *call[1])
-    results[0]["duality-gap"] = 0
+    stack_results(list_node, results, 0, monitors)
 
     # frank-wolfe
     for t in range(nb_iter):
@@ -397,10 +537,8 @@ def centralized_FW(nodes, base_clfs, nb_iter=1, beta=None, monitors=None):
 
         dual_gap = sum(one_frank_wolfe_round(list_node, gamma, beta))
 
-        results.append({})  
-        for k, call in monitors.items():
-            results[t+1][k] = call[0](list_node, *call[1])
-        results[t+1]["duality-gap"] = dual_gap
+        if t % checkevery == 0:
+            stack_results(list_node, results, dual_gap, monitors)
 
     final_alpha = list_node[0].alpha
     for n in nodes:

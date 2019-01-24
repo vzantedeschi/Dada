@@ -2,9 +2,13 @@ import warnings
 
 from math import log
 import numpy as np
+from numpy import linalg as LA
 
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
+
+from classification import RandomClassifier
+from network import compute_alpha_diff
 
 def edges(nodes, *args):
     try:
@@ -17,6 +21,23 @@ def alpha_variance(nodes, *args):
 
 def loss(nodes, *args):
     return np.sum([log(np.mean(n.compute_weights(distr=False))) for n in nodes])
+
+def losses(nodes, *args):
+    return [n.confidence * log(np.sum(n.compute_weights(distr=False))) for n in nodes]
+
+def losses_no_conf(nodes, *args):
+    return [log(np.sum(n.compute_weights(distr=False))) for n in nodes]
+
+def kalo_objective(nodes, mu, la, w, *args):
+
+    try:
+        z = compute_alpha_diff(nodes)
+        d = np.sum(w, axis=1)
+        l = np.asarray(losses(nodes))
+
+        return d.dot(l) + (mu / 2) * (np.multiply(w, z).sum() - np.log(d).sum() + la * (mu / 2) * LA.norm(w, 'fro')**2)
+    except:
+        return np.inf
 
 def central_loss(nodes, *args):
     return log(np.mean(np.concatenate([n.compute_weights(distr=False) for n in nodes])))
@@ -101,3 +122,60 @@ def best_accuracy(nodes):
         best_test_acc = None
 
     return best_train_acc, best_test_acc
+
+def random_accuracy(nodes, *args):
+
+    clf = RandomClassifier()
+
+    predictions, labels = [], []
+
+    for n in nodes:
+        predictions.append(clf.predict(n.sample))
+        labels.append(n.labels)
+
+    train_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
+
+    try:
+        predictions, labels = [], []
+        for n in nodes:
+            predictions.append(clf.predict(n.test_sample))
+            labels.append(n.test_labels)
+        
+        test_acc = accuracy_score(np.concatenate(predictions), np.concatenate(labels))
+
+    except:
+        test_acc = None
+
+    return train_acc, test_acc
+
+def maj_class_accuracy(nodes, *args):
+
+    labels = []
+
+    for n in nodes:
+        labels += n.labels.tolist()
+
+    plus_points = labels.count(1)
+    minus_points = labels.count(-1)
+
+    if plus_points > minus_points:
+        train_acc = plus_points / (plus_points + minus_points)
+        plus = True
+    else:
+        train_acc = minus_points / (plus_points + minus_points)
+        plus = False
+
+    try:
+        labels = []
+        for n in nodes:
+            labels += n.test_labels.tolist()
+        
+        if plus:
+            test_acc = labels.count(1) / len(labels)
+        else:
+            test_acc = labels.count(-1) / len(labels)
+
+    except:
+        test_acc = None
+
+    return train_acc, test_acc

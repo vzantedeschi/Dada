@@ -386,7 +386,6 @@ def load_dense_dataset(name, y_pos=0):
 
     return x.toarray(), y
 
->>>>>>> c9312c62668e570044ab2cda6d6ce5bd2b19c41b
 # --------------------------------------------------------------- cross-validation
 
 def get_split(x, nb_splits, shuffle=True, rnd_state=None):

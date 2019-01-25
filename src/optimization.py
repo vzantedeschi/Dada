@@ -360,7 +360,6 @@ def regularized_local_FW(nodes, base_clfs, nb_iter=1, beta=None, mu=1, monitors=
     return results
 
 def gd_reg_local_FW_obj_kalo(nodes, base_clfs, gd_method={"name":"uniform", "pace_gd":1, "args":()}, nb_iter=1, beta=None, mu=1, monitors=None):
->>>>>>> c9312c62668e570044ab2cda6d6ce5bd2b19c41b
 
     results = []
     N = len(nodes)

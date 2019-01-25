@@ -2,11 +2,8 @@ import numpy as np
 
 from random import random
 
-<<<<<<< HEAD
-=======
 from sklearn.metrics.pairwise import pairwise_distances
 
->>>>>>> c9312c62668e570044ab2cda6d6ce5bd2b19c41b
 from classification import get_basis, LinearClassifier
 from utils import compute_adjacencies, partition
 

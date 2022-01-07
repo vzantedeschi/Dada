@@ -1,6 +1,6 @@
 conda==4.3.30
 conda-build==1.18.2
-cvxopt==1.1.8
+cvxopt==1.2.7
 cvxpy==0.3.7
 jupyter==1.0.0
 jupyter-client==4.1.1
